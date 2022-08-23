@@ -2,7 +2,6 @@ package com.jimmyqin;
 
 import com.jimmyqin.config.MyConfig;
 import com.jimmyqin.service.MyService;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 /**
@@ -13,7 +12,7 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
  */
 public class Main {
 	public static void main(String[] args) {
-		ApplicationContext context = new AnnotationConfigApplicationContext(MyConfig.class);
+		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(MyConfig.class);
 		MyService myService = context.getBean(MyService.class);
 		myService.helloService();
 	}
