@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
  * @date 2022/8/22 16:47
  */
 @Component
-public class MyService {
+public class MyService implements IMyService{
 	private String name;
 	public void helloService() {
 		System.out.println("hello service!!!" + name);

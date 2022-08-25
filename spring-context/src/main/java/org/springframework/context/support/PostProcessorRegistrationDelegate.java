@@ -148,7 +148,7 @@ final class PostProcessorRegistrationDelegate {
 			}
 
 			// Now, invoke the postProcessBeanFactory callback of all processors handled so far.
-			//通过调用BeanFactoryPostProcessor来实现修改BeanDefinition定义（ConfigurationClassPostProcessor对@configuration配置类中的@bean创建的bean作一个动态代理）
+			//通过调用BeanFactoryPostProcessor来实现修改BeanDefinition定义（ConfigurationClassPostProcessor会对@Configuration配置类作一个full标记，后续会对当中的@bean创建的bean作一个动态代理）
 			invokeBeanFactoryPostProcessors(registryProcessors, beanFactory);
 			// regularPostProcessors 这个需要手动context.addBeanFactoryPostProcessor才会有，所以此处执行无效
 			invokeBeanFactoryPostProcessors(regularPostProcessors, beanFactory);
