@@ -291,6 +291,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		}
 
 		// Return immediately if no @Configuration classes were found
+		// 没有配置类直接返回
 		if (configCandidates.isEmpty()) {
 			return;
 		}
@@ -342,7 +343,8 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 						registry, this.sourceExtractor, this.resourceLoader, this.environment,
 						this.importBeanNameGenerator, parser.getImportRegistry());
 			}
-			// 拿到@Configuration的配置类， 把配置类中的@bean和@Import等注册成bean定义map中
+			// 拿到@Configuration的配置类， 此时才会把配置类中的@bean和@Import，@ImportResource注册成bean定义map中
+			// 为什么要此时才注册到bean定义map中呢？思考：优先级问题？当有多个时，会把前面注册的覆盖掉？
 			this.reader.loadBeanDefinitions(configClasses);
 			alreadyParsed.addAll(configClasses);
 			processConfig.tag("classCount", () -> String.valueOf(configClasses.size())).end();

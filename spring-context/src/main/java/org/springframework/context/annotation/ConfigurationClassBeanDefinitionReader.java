@@ -149,11 +149,13 @@ class ConfigurationClassBeanDefinitionReader {
 		if (configClass.isImported()) {
 			registerBeanDefinitionForImportedConfigurationClass(configClass);
 		}
+		// 注册@Bean的bean定义到map中
 		for (BeanMethod beanMethod : configClass.getBeanMethods()) {
 			loadBeanDefinitionsForBeanMethod(beanMethod);
 		}
-
+		// 通过@ImportResources导入进来的注册到bean定义map中
 		loadBeanDefinitionsFromImportedResources(configClass.getImportedResources());
+		// 此处会注册通过@Import注解导入进来的到bean定义map中
 		loadBeanDefinitionsFromRegistrars(configClass.getImportBeanDefinitionRegistrars());
 	}
 

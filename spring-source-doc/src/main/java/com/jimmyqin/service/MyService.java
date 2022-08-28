@@ -11,6 +11,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class MyService implements IMyService{
 	private String name;
+
+	@Override
 	public void helloService() {
 		System.out.println("hello service!!!" + name);
 	}

@@ -126,7 +126,7 @@ class ComponentScanAnnotationParser {
 				return declaringClass.equals(className);
 			}
 		});
-		// 拿到需要扫描的包路径，执行扫描
+		// 拿到需要扫描的包路径，执行扫描， 会把扫描到的注册到bean定义map中
 		return scanner.doScan(StringUtils.toStringArray(basePackages));
 	}
 

@@ -1,6 +1,8 @@
 package com.jimmyqin;
 
+import com.jimmyqin.common.PostProcessBeforeInstantiationBean;
 import com.jimmyqin.config.MyConfig;
+import com.jimmyqin.service.IMyService;
 import com.jimmyqin.service.MyService;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
@@ -12,8 +14,11 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
  */
 public class Main {
 	public static void main(String[] args) {
+		System.setProperty("sun.misc.ProxyGenerator.saveGeneratedFiles", "true");
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(MyConfig.class);
-		MyService myService = context.getBean(MyService.class);
+		IMyService myService = context.getBean(IMyService.class);
+		PostProcessBeforeInstantiationBean m = context.getBean(PostProcessBeforeInstantiationBean.class);
 		myService.helloService();
+		System.out.println(m);
 	}
 }

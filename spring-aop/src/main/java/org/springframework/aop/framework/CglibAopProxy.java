@@ -685,6 +685,7 @@ class CglibAopProxy implements AopProxy, Serializable {
 			try {
 				if (this.advised.exposeProxy) {
 					// Make invocation available if necessary.
+					// 把当前动态代理对象暴露到线程ThreadLocal变量中
 					oldProxy = AopContext.setCurrentProxy(proxy);
 					setProxyContext = true;
 				}
