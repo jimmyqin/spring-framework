@@ -379,6 +379,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 
 		if (txAttr == null || !(ptm instanceof CallbackPreferringPlatformTransactionManager)) {
 			// Standard transaction demarcation with getTransaction and commit/rollback calls.
+			// 事务管理器PlatformTransactionManager已经封装到TransactionInfo中，后续提交事务可以从中拿出来使用
 			TransactionInfo txInfo = createTransactionIfNecessary(ptm, txAttr, joinpointIdentification);
 
 			Object retVal;
@@ -389,7 +390,9 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 			}
 			catch (Throwable ex) {
 				// target invocation exception
+				// 当业务抛出异常是，会跑到这里，是否执行回滚就在里面了
 				completeTransactionAfterThrowing(txInfo, ex);
+				//处理完成重新抛出异常到业务层中
 				throw ex;
 			}
 			finally {
@@ -592,6 +595,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 		TransactionStatus status = null;
 		if (txAttr != null) {
 			if (tm != null) {
+				// 事务传播行为处理
 				status = tm.getTransaction(txAttr);
 			}
 			else {
@@ -637,6 +641,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 		// We always bind the TransactionInfo to the thread, even if we didn't create
 		// a new transaction here. This guarantees that the TransactionInfo stack
 		// will be managed correctly even if no transaction was created by this aspect.
+		// TransactionInfo与当前线程绑定
 		txInfo.bindToThread();
 		return txInfo;
 	}
@@ -662,13 +667,16 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 	 * @param ex throwable encountered
 	 */
 	protected void completeTransactionAfterThrowing(@Nullable TransactionInfo txInfo, Throwable ex) {
+		// 判断是否存在事务，有些没有事务注解的方法是不满足这里的条件的
 		if (txInfo != null && txInfo.getTransactionStatus() != null) {
 			if (logger.isTraceEnabled()) {
 				logger.trace("Completing transaction for [" + txInfo.getJoinpointIdentification() +
 						"] after exception: " + ex);
 			}
+			// 此处会在rollbackOn中判断该异常是否需要回滚
 			if (txInfo.transactionAttribute != null && txInfo.transactionAttribute.rollbackOn(ex)) {
 				try {
+					// 执行回滚
 					txInfo.getTransactionManager().rollback(txInfo.getTransactionStatus());
 				}
 				catch (TransactionSystemException ex2) {
@@ -684,6 +692,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 			else {
 				// We don't roll back on this exception.
 				// Will still roll back if TransactionStatus.isRollbackOnly() is true.
+				// 不需要回滚直接提交事务
 				try {
 					txInfo.getTransactionManager().commit(txInfo.getTransactionStatus());
 				}
@@ -778,6 +787,8 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 		private void bindToThread() {
 			// Expose current TransactionStatus, preserving any existing TransactionStatus
 			// for restoration after this transaction is complete.
+			// oldTransactionInfo 链表结构，表示在哪个事务中开启的事务，比如A事务里有事务B，那么此时就有两个TransactionInfo，
+			// // 后一个TransactionInfo（B）包含着一个前一个TransactionInfo（A）的引用，这个指针用oldTransactionInfo属性
 			this.oldTransactionInfo = transactionInfoHolder.get();
 			transactionInfoHolder.set(this);
 		}

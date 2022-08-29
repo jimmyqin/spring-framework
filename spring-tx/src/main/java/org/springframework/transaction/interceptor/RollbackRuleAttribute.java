@@ -139,6 +139,7 @@ public class RollbackRuleAttribute implements Serializable{
 
 
 	private int getDepth(Class<?> exceptionType, int depth) {
+		// 通过类型名称比对
 		if (exceptionType.getName().contains(this.exceptionPattern)) {
 			// Found it!
 			return depth;

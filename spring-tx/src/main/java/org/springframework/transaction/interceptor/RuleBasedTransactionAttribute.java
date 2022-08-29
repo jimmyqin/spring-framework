@@ -20,6 +20,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.lang.Nullable;
 
 /**
@@ -119,15 +120,19 @@ public class RuleBasedTransactionAttribute extends DefaultTransactionAttribute i
 	 * Winning rule is the shallowest rule (that is, the closest in the
 	 * inheritance hierarchy to the exception). If no rule applies (-1),
 	 * return false.
+	 * 解析@Transaction(rollbackFor)见下
 	 * @see TransactionAttribute#rollbackOn(java.lang.Throwable)
+	 * @see org.springframework.transaction.annotation.SpringTransactionAnnotationParser#parseTransactionAnnotation(AnnotationAttributes)
 	 */
 	@Override
 	public boolean rollbackOn(Throwable ex) {
 		RollbackRuleAttribute winner = null;
 		int deepest = Integer.MAX_VALUE;
-
+		// 在此处，如果指定了rollbackFor， rollbackRules不会为空
 		if (this.rollbackRules != null) {
 			for (RollbackRuleAttribute rule : this.rollbackRules) {
+				// getDepth中会去匹配异常是否符合，大于等于0即是符合
+				// 符合了winner就会赋值
 				int depth = rule.getDepth(ex);
 				if (depth >= 0 && depth < deepest) {
 					deepest = depth;
@@ -135,12 +140,15 @@ public class RuleBasedTransactionAttribute extends DefaultTransactionAttribute i
 				}
 			}
 		}
-
+		// 上面匹配失败的就会去匹配默认的异常
 		// User superclass behavior (rollback on unchecked) if no rule matches.
 		if (winner == null) {
+			// 默认异常匹配
 			return super.rollbackOn(ex);
 		}
 
+		 // 会解析rollbackFor,看看是不是RollbackRuleAttribute，是就返回true会回滚
+		 // 是NoRollbackRuleAttribute就返回false，不会回滚
 		return !(winner instanceof NoRollbackRuleAttribute);
 	}
 

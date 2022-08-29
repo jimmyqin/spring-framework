@@ -696,10 +696,12 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 			if (defStatus.isDebug()) {
 				logger.debug("Transactional code has requested rollback");
 			}
+			// 如果 TransactionStatus.isRollbackOnly() 为true，也是会回滚的，
+			// TransactionStatus.isRollbackOnly() 为true, 是说明 嵌套的事务 出现了异常
 			processRollback(defStatus, false);
 			return;
 		}
-
+		// 检查是否有回滚标记，内层嵌套事务会设置该回滚标记
 		if (!shouldCommitOnGlobalRollbackOnly() && defStatus.isGlobalRollbackOnly()) {
 			if (defStatus.isDebug()) {
 				logger.debug("Global transaction is marked as rollback-only but transactional code requested commit");
@@ -837,10 +839,12 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 				else {
 					// Participating in larger transaction
 					if (status.hasTransaction()) {
+						// 判断是否为嵌套事务
 						if (status.isLocalRollbackOnly() || isGlobalRollbackOnParticipationFailure()) {
 							if (status.isDebug()) {
 								logger.debug("Participating transaction failed - marking existing transaction as rollback-only");
 							}
+							// 设置回滚标志，等到最外层事务提交的时候会判断是否有回滚标志
 							doSetRollbackOnly(status);
 						}
 						else {
