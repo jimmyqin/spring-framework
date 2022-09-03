@@ -452,6 +452,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		Object result = existingBean;
 		//BeanPostProcessor的方法postProcessAfterInitialization调用，创建bean的动态代理之一的地方
+		// 如果已经把创建bean的函数的放到三级缓存，说明就是处理过动态代理的问题了，下面进入后置处理器方法后就不会处理动态代理问题了，直接返回当前bean即可
+		// 反之就是需要创建动态代理
 		for (BeanPostProcessor processor : getBeanPostProcessors()) {
 			Object current = processor.postProcessAfterInitialization(result, beanName);
 			if (current == null) {
@@ -582,8 +584,10 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			instanceWrapper = this.factoryBeanInstanceCache.remove(beanName);
 		}
 		if (instanceWrapper == null) {
+			// 会通过反射创建实例
 			instanceWrapper = createBeanInstance(beanName, mbd, args);
 		}
+		// 拿到通过反射创建的实例
 		Object bean = instanceWrapper.getWrappedInstance();
 		Class<?> beanType = instanceWrapper.getWrappedClass();
 		if (beanType != NullBean.class) {
@@ -594,6 +598,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		synchronized (mbd.postProcessingLock) {
 			if (!mbd.postProcessed) {
 				try {
+					// 后置处理器修改合并的bean定义
 					applyMergedBeanDefinitionPostProcessors(mbd, beanType, beanName);
 				}
 				catch (Throwable ex) {
@@ -606,9 +611,11 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		// Eagerly cache singletons to be able to resolve circular references
 		// even when triggered by lifecycle interfaces like BeanFactoryAware.
+		// 是否单例，是否允许循环依赖，是否正在创建中
 		boolean earlySingletonExposure = (mbd.isSingleton() && this.allowCircularReferences &&
 				isSingletonCurrentlyInCreation(beanName));
 		// 早期对象标记 earlySingletonExposure
+		// 满足上述条件才有必要放到三级缓存，为什么呢。为了解决循环依赖和动态代理的问题。
 		if (earlySingletonExposure) {
 			if (logger.isTraceEnabled()) {
 				logger.trace("Eagerly caching bean '" + beanName +
@@ -620,10 +627,16 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 
 		// Initialize the bean instance.
+		// 此时bean还是通过反射创建的bean实例
 		Object exposedObject = bean;
 		try {
+			// 注入bean所依赖的属性， 此时当B又依赖A时，B去找A时，就可以在三级缓存找到在上面一点的代码放进去的函数方法了。
+			// 直接调用函数getObject即可获得A或者A的动态代理.通过把函数方法放进去三级缓存的方式，当A是要做动态代理的处理，就可以延迟创建a的动态代理，不至于b拿到的是a本身，而不是a的动态代理
+			// 如果a需要动态作动态代理，b拿到的就是a的动态代理，否则就是a本身，
+			// 正常情况下A执行完初始化方法后才会创建代理，但是如果出现循环依赖，就得提前创建动态代理，B才能拿到代理对象，而不是一个原始对象。
+
 			populateBean(beanName, mbd, instanceWrapper);
-			// bean的一些初始化扩展点
+			// bean的一些初始化扩展点，如果需要创建动态代理，也会在里面处理
 			exposedObject = initializeBean(beanName, exposedObject, mbd);
 		}
 		catch (Throwable ex) {
@@ -1420,10 +1433,12 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		if (resolvedAutowireMode == AUTOWIRE_BY_NAME || resolvedAutowireMode == AUTOWIRE_BY_TYPE) {
 			MutablePropertyValues newPvs = new MutablePropertyValues(pvs);
 			// Add property values based on autowire by name if applicable.
+			// 先是按照名字来注入
 			if (resolvedAutowireMode == AUTOWIRE_BY_NAME) {
 				autowireByName(beanName, mbd, bw, newPvs);
 			}
 			// Add property values based on autowire by type if applicable.
+			// 按照属性类型来注入
 			if (resolvedAutowireMode == AUTOWIRE_BY_TYPE) {
 				autowireByType(beanName, mbd, bw, newPvs);
 			}
@@ -1438,6 +1453,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			if (pvs == null) {
 				pvs = mbd.getPropertyValues();
 			}
+			// 又是一个后置处理器
 			for (InstantiationAwareBeanPostProcessor bp : getBeanPostProcessorCache().instantiationAware) {
 				PropertyValues pvsToUse = bp.postProcessProperties(pvs, bw.getWrappedInstance(), beanName);
 				if (pvsToUse == null) {
@@ -1458,7 +1474,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			}
 			checkDependencies(beanName, mbd, filteredPds, pvs);
 		}
-
+		//属性值填充到bean里面
 		if (pvs != null) {
 			applyPropertyValues(beanName, mbd, bw, pvs);
 		}
@@ -1475,8 +1491,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 */
 	protected void autowireByName(
 			String beanName, AbstractBeanDefinition mbd, BeanWrapper bw, MutablePropertyValues pvs) {
-
+		// 拿到需要注入的属性名称
 		String[] propertyNames = unsatisfiedNonSimpleProperties(mbd, bw);
+		// 循环去一个个拿到需注入的bean统一放到pvs中
 		for (String propertyName : propertyNames) {
 			if (containsBean(propertyName)) {
 				// 此处根据名字去获取

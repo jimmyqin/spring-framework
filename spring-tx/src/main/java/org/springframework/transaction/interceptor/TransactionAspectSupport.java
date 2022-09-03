@@ -379,13 +379,15 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 
 		if (txAttr == null || !(ptm instanceof CallbackPreferringPlatformTransactionManager)) {
 			// Standard transaction demarcation with getTransaction and commit/rollback calls.
-			// 事务管理器PlatformTransactionManager已经封装到TransactionInfo中，后续提交事务可以从中拿出来使用
+			// 事务管理器PlatformTransactionManager封装到TransactionInfo中，后续提交事务可以从中拿出来使用
+			// 在里面的doBegin会创建一个connection，开启事务
 			TransactionInfo txInfo = createTransactionIfNecessary(ptm, txAttr, joinpointIdentification);
 
 			Object retVal;
 			try {
 				// This is an around advice: Invoke the next interceptor in the chain.
 				// This will normally result in a target object being invoked.
+				// 钩子函数调用，这里就是上面其实调了return invocation.proceed();注意两个invocation不是同一个
 				retVal = invocation.proceedWithInvocation();
 			}
 			catch (Throwable ex) {

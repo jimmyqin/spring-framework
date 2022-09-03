@@ -247,7 +247,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	@Override
 	public Object getEarlyBeanReference(Object bean, String beanName) {
 		Object cacheKey = getCacheKey(bean.getClass(), beanName);
-		// 把bean放到earlyProxyReferences中，标记该bean已经在此处创建了动态代理，
+		// 把bean放到earlyProxyReferences中，标记该bean已经在此处处理了动态代理问题，如果不需要创建动态代理，会原样返回bean
 		// 后续执行bean的初始化后处理器postProcessAfterInitialization方法，从中判断是否已经创建了bean的动态代理
 		this.earlyProxyReferences.put(cacheKey, bean);
 		return wrapIfNecessary(bean, beanName, cacheKey);
