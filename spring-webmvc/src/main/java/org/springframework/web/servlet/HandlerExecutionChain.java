@@ -145,7 +145,9 @@ public class HandlerExecutionChain {
 	boolean applyPreHandle(HttpServletRequest request, HttpServletResponse response) throws Exception {
 		for (int i = 0; i < this.interceptorList.size(); i++) {
 			HandlerInterceptor interceptor = this.interceptorList.get(i);
+			// 循环执行拦截器的preHandle方法，只要有一个拦截处理器返回false，中断执行
 			if (!interceptor.preHandle(request, response, this.handler)) {
+				// 中断后，提前执行afterCompletion，里面也是一个循环执行
 				triggerAfterCompletion(request, response, null);
 				return false;
 			}

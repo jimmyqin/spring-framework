@@ -205,12 +205,14 @@ public abstract class AbstractMessageConverterMethodProcessor extends AbstractMe
 		MediaType selectedMediaType = null;
 		MediaType contentType = outputMessage.getHeaders().getContentType();
 		boolean isContentTypePreset = contentType != null && contentType.isConcrete();
+		// 首先从response中获取返回相应类型，有可能会自己设置到响应头中
 		if (isContentTypePreset) {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Found 'Content-Type:" + contentType + "' in response");
 			}
 			selectedMediaType = contentType;
 		}
+		// 否则从客户端的request中获取客户端需要的相应体类型
 		else {
 			HttpServletRequest request = inputMessage.getServletRequest();
 			List<MediaType> acceptableTypes;
@@ -272,12 +274,16 @@ public abstract class AbstractMessageConverterMethodProcessor extends AbstractMe
 
 		if (selectedMediaType != null) {
 			selectedMediaType = selectedMediaType.removeQualityValue();
+			// 消息转换AbstractGenericHttpMessageConverter会执行writeInternal方法去把响应数据写入到输出流中
+			// 具体怎么写入交给子类去实现
 			for (HttpMessageConverter<?> converter : this.messageConverters) {
 				GenericHttpMessageConverter genericConverter = (converter instanceof GenericHttpMessageConverter ?
 						(GenericHttpMessageConverter<?>) converter : null);
 				if (genericConverter != null ?
 						((GenericHttpMessageConverter) converter).canWrite(targetType, valueType, selectedMediaType) :
 						converter.canWrite(valueType, selectedMediaType)) {
+					// 执行ResponseBodyAdvice接口处理（循环执行，可能有多个），可以对相应体作进一步处理再返回给客户端
+					// 返回数据给客户端前处理扩展点，可以作加解密处理
 					body = getAdvice().beforeBodyWrite(body, returnType, selectedMediaType,
 							(Class<? extends HttpMessageConverter<?>>) converter.getClass(),
 							inputMessage, outputMessage);
@@ -298,11 +304,12 @@ public abstract class AbstractMessageConverterMethodProcessor extends AbstractMe
 							logger.debug("Nothing to write: null body");
 						}
 					}
+					// 执行完相应处理返回
 					return;
 				}
 			}
 		}
-
+		// 找不到消息相应内容转换器HttpMessageConverter抛异常
 		if (body != null) {
 			Set<MediaType> producibleMediaTypes =
 					(Set<MediaType>) inputMessage.getServletRequest()
