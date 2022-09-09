@@ -166,7 +166,7 @@ public class InvocableHandlerMethod extends HandlerMethod {
 		}
 
 		Object[] args = new Object[parameters.length];
-		// 循环解析参数
+		// 循环解析参数， 扩展点，可以自定义参数解析器
 		for (int i = 0; i < parameters.length; i++) {
 			MethodParameter parameter = parameters[i];
 			parameter.initParameterNameDiscovery(this.parameterNameDiscoverer);
@@ -207,6 +207,9 @@ public class InvocableHandlerMethod extends HandlerMethod {
 				return CoroutinesUtils.invokeSuspendingFunction(method, getBean(), args);
 			}
 			// 反射执行自己编写的接口方法
+			// 这个method就是自己写的接口方法
+			// @PostMapping("/hello")
+			// public Object hello(String name)
 			return method.invoke(getBean(), args);
 		}
 		catch (IllegalArgumentException ex) {

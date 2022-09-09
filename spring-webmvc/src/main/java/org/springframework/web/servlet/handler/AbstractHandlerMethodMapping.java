@@ -98,6 +98,7 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 	@Nullable
 	private HandlerMethodMappingNamingStrategy<T> namingStrategy;
 
+	// 这里里面装的就是url到接口的映射
 	private final MappingRegistry mappingRegistry = new MappingRegistry();
 
 
@@ -210,6 +211,7 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 	 */
 	@Override
 	public void afterPropertiesSet() {
+		// spring的InitializingBean接口扩展点来初始化注册url到接口的映射
 		initHandlerMethods();
 	}
 
