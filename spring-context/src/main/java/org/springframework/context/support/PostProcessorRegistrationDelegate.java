@@ -159,7 +159,8 @@ final class PostProcessorRegistrationDelegate {
 			// Invoke factory processors registered with the context instance.
 			invokeBeanFactoryPostProcessors(beanFactoryPostProcessors, beanFactory);
 		}
-
+		
+		// 处理BeanFactoryPostProcessor部分
 		// Do not initialize FactoryBeans here: We need to leave all regular beans
 		// uninitialized to let the bean factory post-processors apply to them!
 		String[] postProcessorNames =
