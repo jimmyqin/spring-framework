@@ -1,6 +1,7 @@
 package com.jimmyqin;
 
 import com.jimmyqin.common.PostProcessBeforeInstantiationBean;
+import com.jimmyqin.common.TestFactoryBean;
 import com.jimmyqin.common.TestFactoryBeanCopy;
 import com.jimmyqin.config.MyConfig;
 import com.jimmyqin.service.IMyService;
@@ -18,7 +19,8 @@ public class Main {
 		System.setProperty("sun.misc.ProxyGenerator.saveGeneratedFiles", "true");
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(MyConfig.class);
 		IMyService myService = context.getBean(IMyService.class);
-		TestFactoryBeanCopy factoryBeanCopy = context.getBean(TestFactoryBeanCopy.class);
+		TestFactoryBeanCopy factoryBeanCopy = (TestFactoryBeanCopy)context.getBean("testFactoryBean");
+		TestFactoryBean factoryBeanCopy1 = (TestFactoryBean)context.getBean("&testFactoryBean");
 		PostProcessBeforeInstantiationBean m = context.getBean(PostProcessBeforeInstantiationBean.class);
 		myService.helloService();
 		System.out.println(m);

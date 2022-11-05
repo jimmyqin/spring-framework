@@ -36,6 +36,9 @@ import org.springframework.beans.BeansException;
  * @param <T> the object type
  * @see FactoryBean
  */
+// 创建bean有两个地方会用到这个
+//	1. getSingleton()方法中
+//  2. 从一二三级缓存中获取的时候，三级缓存中有的时候会调用（重点），而getObject里面的实现又会调用getEarlyBeanReference
 @FunctionalInterface
 public interface ObjectFactory<T> {
 

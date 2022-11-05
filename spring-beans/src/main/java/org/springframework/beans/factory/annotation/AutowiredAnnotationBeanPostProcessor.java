@@ -490,6 +490,7 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 					return;
 				}
 				MergedAnnotation<?> ann = findAutowiredAnnotation(bridgedMethod);
+				// 如果字段是static的，则直接进行返回，不进行注入
 				if (ann != null && method.equals(ClassUtils.getMostSpecificMethod(method, clazz))) {
 					if (Modifier.isStatic(method.getModifiers())) {
 						if (logger.isInfoEnabled()) {

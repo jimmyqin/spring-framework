@@ -83,6 +83,7 @@ public abstract class BeanFactoryUtils {
 		if (!name.startsWith(BeanFactory.FACTORY_BEAN_PREFIX)) {
 			return name;
 		}
+		// FactoryBean创建的去除&，然后保存起来先
 		return transformedBeanNameCache.computeIfAbsent(name, beanName -> {
 			do {
 				beanName = beanName.substring(BeanFactory.FACTORY_BEAN_PREFIX.length());

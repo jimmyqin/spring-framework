@@ -88,7 +88,9 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 * {@link Configuration @Configuration} classes
 	 */
 	public AnnotationConfigApplicationContext(Class<?>... componentClasses) {
+		// 注册一些后置处理器到bean定义中
 		this();
+		// 注册传进来的componentClasses配置类为bean定义
 		register(componentClasses);
 		refresh();
 	}

@@ -137,7 +137,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 
 	private final Set<String> targetSourcedBeans = Collections.newSetFromMap(new ConcurrentHashMap<>(16));
 
-	// 标记一下
+	// 缓存bean的原始对象
 	private final Map<Object, Object> earlyProxyReferences = new ConcurrentHashMap<>(16);
 
 	private final Map<Object, Class<?>> proxyTypes = new ConcurrentHashMap<>(16);
@@ -247,14 +247,19 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	@Override
 	public Object getEarlyBeanReference(Object bean, String beanName) {
 		Object cacheKey = getCacheKey(bean.getClass(), beanName);
-		// 把bean放到earlyProxyReferences中，标记该bean已经在此处处理了动态代理问题，如果不需要创建动态代理，会原样返回bean
-		// 后续执行bean的初始化后处理器postProcessAfterInitialization方法，从中判断是否已经创建了bean的动态代理
+		// ab循环依赖的时候会调用，a注入b,b去创建，b又需要注入a，此处就是b在三级缓存中拿到a的创建实例工厂,要生成a，此时这个bean就是a
+		// 把bean放到earlyProxyReferences中，标记该bean如果是需要动态代理，在这里已经生成了动态代理了，后续执行a的初始化后方法的后置处理器就不用创建了
+		// 后续执行bean的初始化后处理器postProcessAfterInitialization方法，从中判断是否需要创建bean的动态代理
+		// 没有aop的情况下直接返回原始对象，有aop的情况下返回代理对象
+		//earlyProxyReferences缓存bean的原始对象
 		this.earlyProxyReferences.put(cacheKey, bean);
+		//真正负责创建动态代理的地方
 		return wrapIfNecessary(bean, beanName, cacheKey);
 	}
 
 	@Override
 	public Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName) {
+		// bean有&就是在这里拼接的,FactoryBean创建的才会拼接
 		Object cacheKey = getCacheKey(beanClass, beanName);
 
 		if (!StringUtils.hasLength(beanName) || !this.targetSourcedBeans.contains(beanName)) {
@@ -300,9 +305,16 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	public Object postProcessAfterInitialization(@Nullable Object bean, String beanName) {
 		if (bean != null) {
 			Object cacheKey = getCacheKey(bean.getClass(), beanName);
-			// 此处结合了三级缓存创建动态代理， 循环依赖创建的动态代理会放到earlyProxyReferences中，
-			// 此时通过beanName去获取，如果有，则说明在循环依赖放到三级缓存的函数方法中已经创建了动态代理，
-			// 有就没有必要创建了直接返回，没有就执行动态代理的创建过程。
+			// 此处结合了三级缓存创建动态代理， b创建a的时候，循环依赖创建a的动态代理处理会放到earlyProxyReferences中，
+			// 此时通过beanName（即cacheKey）去获取，如果有，则说明在循环依赖放到三级缓存的函数方法中已经创建了动态代理，
+
+			// 有就没有必要创建了直接返回，因为在循环依赖并需要创建代理的情况下，在查找三级缓存的时候已经创建了代理对象了
+			// 没有就执行动态代理的创建过程，因为 AbstractAutoProxyCreator这个就是创建代理对象的一个抽象类一个后置处理器，
+			// 他的子类也是一个创建动态代理的后置处理器，做的就是创将动态代理的工作
+
+			//在没有循环依赖的普通情况下 earlyProxyReferences.remove(cacheKey)返回的是null
+			// remove方法会返回存储的对象
+			// remove返回的bean和此处的bean都是原始的bean
 			if (this.earlyProxyReferences.remove(cacheKey) != bean) {
 				// 创建动态代理
 				return wrapIfNecessary(bean, beanName, cacheKey);
@@ -355,6 +367,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		// Create proxy if we have advice.
 		// 拿到创建bean之前执行的后置处理器解析的advisor
 		Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
+		// 是否需要动态代理
 		if (specificInterceptors != DO_NOT_PROXY) {
 			this.advisedBeans.put(cacheKey, Boolean.TRUE);
 			// 创建动态代理
@@ -494,6 +507,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		if (classLoader instanceof SmartClassLoader && classLoader != beanClass.getClassLoader()) {
 			classLoader = ((SmartClassLoader) classLoader).getOriginalClassLoader();
 		}
+		//创建代理
 		return proxyFactory.getProxy(classLoader);
 	}
 

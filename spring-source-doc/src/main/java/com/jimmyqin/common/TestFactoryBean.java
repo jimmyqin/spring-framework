@@ -3,6 +3,9 @@ package com.jimmyqin.common;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.stereotype.Component;
 
+/**
+ * 实际上会注册进两个Bean对象，一个是我们的工厂对象，另一是我们生产出来的对象getObject()
+ */
 @Component
 public class TestFactoryBean implements FactoryBean<TestFactoryBeanCopy> {
 	private String name;

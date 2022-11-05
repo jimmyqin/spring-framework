@@ -61,6 +61,7 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 						(PrivilegedAction<Class<?>>) factoryBean::getObjectType, getAccessControlContext());
 			}
 			else {
+				// FactoryBean接口类型判断
 				return factoryBean.getObjectType();
 			}
 		}
@@ -95,10 +96,14 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 	 */
 	protected Object getObjectFromFactoryBean(FactoryBean<?> factory, String beanName, boolean shouldPostProcess) {
 		// spring容器初始化完成，调用getBean的时候，才会调用FactoryBean的getObject方法,所以containsSingleton才会包含有
+		// 这里factory.isSingleton() 默认是true，FactoryBean创建的实例，可以通过isSingleton()来控制，设置为false就不会缓存起来的
 		if (factory.isSingleton() && containsSingleton(beanName)) {
 			synchronized (getSingletonMutex()) {
+				// FactoryBean创建的放在缓存里面，后续可以从里面拿，单例
+				// factory.isSingleton()设置为false就不会缓存起来的
 				Object object = this.factoryBeanObjectCache.get(beanName);
 				if (object == null) {
+					// 重点 调用FactoryBean#getObject()的地方
 					object = doGetObjectFromFactoryBean(factory, beanName);
 					// Only post-process and store if not put there already during getObject() call above
 					// (e.g. because of circular reference processing triggered by custom getBean calls)
@@ -115,7 +120,9 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 							}
 							beforeSingletonCreation(beanName);
 							try {
-								// 后置处理器调用
+								// 后置处理器如果有FactoryBeanRegistrySupport子类的实现的
+								// 则调用子类的，否则原样返回object
+								//这个object是使用FactoryBean方式生成的。
 								object = postProcessObjectFromFactoryBean(object, beanName);
 							}
 							catch (Throwable ex) {
@@ -126,6 +133,7 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 								afterSingletonCreation(beanName);
 							}
 						}
+						// 会缓存FactoryBean创建的实例
 						if (containsSingleton(beanName)) {
 							this.factoryBeanObjectCache.put(beanName, object);
 						}
@@ -135,6 +143,7 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 			}
 		}
 		else {
+			// factory.isSingleton() 为false走这里，不缓存FactoryBean创建的实例
 			Object object = doGetObjectFromFactoryBean(factory, beanName);
 			if (shouldPostProcess) {
 				try {

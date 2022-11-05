@@ -182,7 +182,7 @@ public abstract class WebApplicationContextUtils {
 	 */
 	public static void registerWebApplicationScopes(ConfigurableListableBeanFactory beanFactory,
 			@Nullable ServletContext sc) {
-
+		// 注册对象的作用域范围
 		beanFactory.registerScope(WebApplicationContext.SCOPE_REQUEST, new RequestScope());
 		beanFactory.registerScope(WebApplicationContext.SCOPE_SESSION, new SessionScope());
 		if (sc != null) {
@@ -191,7 +191,7 @@ public abstract class WebApplicationContextUtils {
 			// Register as ServletContext attribute, for ContextCleanupListener to detect it.
 			sc.setAttribute(ServletContextScope.class.getName(), appScope);
 		}
-
+		// 注册获取该对象的工厂，后续获取该对象，都通过工厂获取即可
 		beanFactory.registerResolvableDependency(ServletRequest.class, new RequestObjectFactory());
 		beanFactory.registerResolvableDependency(ServletResponse.class, new ResponseObjectFactory());
 		beanFactory.registerResolvableDependency(HttpSession.class, new SessionObjectFactory());

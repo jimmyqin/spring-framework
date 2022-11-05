@@ -13,11 +13,12 @@ import org.springframework.stereotype.Component;
 public class CustomBeanDefinitionRegistryPostProcessor implements BeanDefinitionRegistryPostProcessor {
 	@Override
 	public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
-	//TODO 修改属性
+	// 整合 BeanDefinition 的过程中调用;操作对象的Bean定义 可以修改属性
 	}
 
 	@Override
 	public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) throws BeansException {
+		// 添加新的bean定义
 		GenericBeanDefinition beanDefinition = new GenericBeanDefinition();
 		beanDefinition.setBeanClass(TestBean.class);
 		MutablePropertyValues propertyValues = beanDefinition.getPropertyValues();
