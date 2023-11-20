@@ -98,8 +98,9 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 
 	private String resourcePattern = DEFAULT_RESOURCE_PATTERN;
 
+	// 那些需要被扫描注册为bean
 	private final List<TypeFilter> includeFilters = new ArrayList<>();
-
+	// 排除不需要扫描注册的bean
 	private final List<TypeFilter> excludeFilters = new ArrayList<>();
 
 	@Nullable
