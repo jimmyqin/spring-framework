@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import javax.annotation.Resource;
-import javax.inject.Provider;
-
+import jakarta.annotation.Resource;
+import jakarta.inject.Provider;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.BeanClassLoaderAware;
@@ -144,6 +143,12 @@ class ConfigurationClassProcessingTests {
 				initBeanFactory(ConfigWithFinalBean.class));
 	}
 
+	@Test  // gh-31007
+	void voidBeanMethod() {
+		assertThatExceptionOfType(BeanDefinitionParsingException.class).isThrownBy(() ->
+				initBeanFactory(ConfigWithVoidBean.class));
+	}
+
 	@Test
 	void simplestPossibleConfig() {
 		BeanFactory factory = initBeanFactory(SimplestPossibleConfig.class);
@@ -173,15 +178,15 @@ class ConfigurationClassProcessingTests {
 		assertThat(condition).isTrue();
 
 		String[] beanNames = factory.getBeanNamesForType(FactoryBean.class);
-		assertThat(beanNames.length).isEqualTo(1);
+		assertThat(beanNames).hasSize(1);
 		assertThat(beanNames[0]).isEqualTo("&factoryBean");
 
 		beanNames = factory.getBeanNamesForType(BeanClassLoaderAware.class);
-		assertThat(beanNames.length).isEqualTo(1);
+		assertThat(beanNames).hasSize(1);
 		assertThat(beanNames[0]).isEqualTo("&factoryBean");
 
 		beanNames = factory.getBeanNamesForType(ListFactoryBean.class);
-		assertThat(beanNames.length).isEqualTo(1);
+		assertThat(beanNames).hasSize(1);
 		assertThat(beanNames[0]).isEqualTo("&factoryBean");
 
 		beanNames = factory.getBeanNamesForType(List.class);
@@ -427,8 +432,16 @@ class ConfigurationClassProcessingTests {
 	@Configuration
 	static class ConfigWithFinalBean {
 
-		public final @Bean TestBean testBean() {
+		@Bean public final TestBean testBean() {
 			return new TestBean();
+		}
+	}
+
+
+	@Configuration
+	static class ConfigWithVoidBean {
+
+		@Bean public void testBean() {
 		}
 	}
 
@@ -436,7 +449,7 @@ class ConfigurationClassProcessingTests {
 	@Configuration
 	static class SimplestPossibleConfig {
 
-		public @Bean String stringBean() {
+		@Bean public String stringBean() {
 			return "foo";
 		}
 	}
@@ -445,11 +458,11 @@ class ConfigurationClassProcessingTests {
 	@Configuration
 	static class ConfigWithNonSpecificReturnTypes {
 
-		public @Bean Object stringBean() {
+		@Bean public Object stringBean() {
 			return "foo";
 		}
 
-		public @Bean FactoryBean<?> factoryBean() {
+		@Bean public FactoryBean<?> factoryBean() {
 			ListFactoryBean fb = new ListFactoryBean();
 			fb.setSourceList(Arrays.asList("element1", "element2"));
 			return fb;
@@ -460,13 +473,13 @@ class ConfigurationClassProcessingTests {
 	@Configuration
 	static class ConfigWithPrototypeBean {
 
-		public @Bean TestBean foo() {
+		@Bean public TestBean foo() {
 			TestBean foo = new SpousyTestBean("foo");
 			foo.setSpouse(bar());
 			return foo;
 		}
 
-		public @Bean TestBean bar() {
+		@Bean public TestBean bar() {
 			TestBean bar = new SpousyTestBean("bar");
 			bar.setSpouse(baz());
 			return bar;
@@ -631,7 +644,7 @@ class ConfigurationClassProcessingTests {
 	}
 
 
-	@Configuration
+	@Configuration(enforceUniqueMethods = false)
 	public static class OverloadedBeanMismatch {
 
 		@Bean(name = "other")
@@ -673,14 +686,11 @@ class ConfigurationClassProcessingTests {
 
 		@Bean
 		@Scope(value = "prototype")
-		public PrototypeInterface getDemoBean( int i) {
-			switch ( i) {
-				case 1: return new PrototypeOne();
-				case 2:
-				default:
-					return new PrototypeTwo();
-
-			}
+		public PrototypeInterface getDemoBean(int i) {
+			return switch (i) {
+				case 1 -> new PrototypeOne();
+				default -> new PrototypeTwo();
+			};
 		}
 	}
 

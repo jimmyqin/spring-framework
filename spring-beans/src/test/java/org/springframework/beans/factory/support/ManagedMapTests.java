@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.springframework.beans.factory.support;
 
-import java.util.AbstractMap.SimpleEntry;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -35,12 +34,12 @@ public class ManagedMapTests {
 
 	@Test
 	public void mergeSunnyDay() {
-		ManagedMap parent = ManagedMap.ofEntries(new SimpleEntry<>("one", "one"),
-				new SimpleEntry<>("two", "two"));
-		ManagedMap child = ManagedMap.ofEntries(new SimpleEntry<>("tree", "three"));
+		ManagedMap parent = ManagedMap.ofEntries(Map.entry("one", "one"),
+				Map.entry("two", "two"));
+		ManagedMap child = ManagedMap.ofEntries(Map.entry("tree", "three"));
 		child.setMergeEnabled(true);
 		Map mergedMap = (Map) child.merge(parent);
-		assertThat(mergedMap.size()).as("merge() obviously did not work.").isEqualTo(3);
+		assertThat(mergedMap).as("merge() obviously did not work.").hasSize(3);
 	}
 
 	@Test
@@ -66,23 +65,23 @@ public class ManagedMapTests {
 
 	@Test
 	public void mergeEmptyChild() {
-		ManagedMap parent = ManagedMap.ofEntries(new SimpleEntry<>("one", "one"),
-				new SimpleEntry<>("two", "two"));
+		ManagedMap parent = ManagedMap.ofEntries(Map.entry("one", "one"),
+				Map.entry("two", "two"));
 		ManagedMap child = new ManagedMap();
 		child.setMergeEnabled(true);
 		Map mergedMap = (Map) child.merge(parent);
-		assertThat(mergedMap.size()).as("merge() obviously did not work.").isEqualTo(2);
+		assertThat(mergedMap).as("merge() obviously did not work.").hasSize(2);
 	}
 
 	@Test
 	public void mergeChildValuesOverrideTheParents() {
-		ManagedMap parent = ManagedMap.ofEntries(new SimpleEntry<>("one", "one"),
-				new SimpleEntry<>("two", "two"));
-		ManagedMap child = ManagedMap.ofEntries(new SimpleEntry<>("one", "fork"));
+		ManagedMap parent = ManagedMap.ofEntries(Map.entry("one", "one"),
+				Map.entry("two", "two"));
+		ManagedMap child = ManagedMap.ofEntries(Map.entry("one", "fork"));
 		child.setMergeEnabled(true);
 		Map mergedMap = (Map) child.merge(parent);
 		// child value for 'one' must override parent value...
-		assertThat(mergedMap.size()).as("merge() obviously did not work.").isEqualTo(2);
+		assertThat(mergedMap).as("merge() obviously did not work.").hasSize(2);
 		assertThat(mergedMap.get("one")).as("Parent value not being overridden during merge().").isEqualTo("fork");
 	}
 

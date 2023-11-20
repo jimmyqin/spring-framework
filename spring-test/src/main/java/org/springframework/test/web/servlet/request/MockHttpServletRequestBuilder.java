@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,10 +30,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import javax.servlet.ServletContext;
-import javax.servlet.ServletRequest;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpSession;
 
 import org.springframework.beans.Mergeable;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
@@ -51,7 +51,6 @@ import org.springframework.util.Assert;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.ObjectUtils;
-import org.springframework.util.StreamUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
@@ -105,6 +104,9 @@ public class MockHttpServletRequestBuilder
 	private MockHttpSession session;
 
 	@Nullable
+	private String remoteAddress;
+
+	@Nullable
 	private String characterEncoding;
 
 	@Nullable
@@ -148,9 +150,10 @@ public class MockHttpServletRequestBuilder
 
 	private static URI initUri(String url, Object[] vars) {
 		Assert.notNull(url, "'url' must not be null");
-		Assert.isTrue(url.startsWith("/") || url.startsWith("http://") || url.startsWith("https://"), "" +
-				"'url' should start with a path or be a complete HTTP URL: " + url);
-		return UriComponentsBuilder.fromUriString(url).buildAndExpand(vars).encode().toUri();
+		Assert.isTrue(url.isEmpty() || url.startsWith("/") || url.startsWith("http://") || url.startsWith("https://"),
+				() -> "'url' should start with a path or be a complete HTTP URL: " + url);
+		String uriString = (url.isEmpty() ? "/" : url);
+		return UriComponentsBuilder.fromUriString(uriString).buildAndExpand(vars).encode().toUri();
 	}
 
 	/**
@@ -185,7 +188,7 @@ public class MockHttpServletRequestBuilder
 	 * the requestURI. This is because most applications don't actually depend
 	 * on the name under which they're deployed. If specified here, the context
 	 * path must start with a "/" and must not end with a "/".
-	 * @see javax.servlet.http.HttpServletRequest#getContextPath()
+	 * @see jakarta.servlet.http.HttpServletRequest#getContextPath()
 	 */
 	public MockHttpServletRequestBuilder contextPath(String contextPath) {
 		if (StringUtils.hasText(contextPath)) {
@@ -207,7 +210,7 @@ public class MockHttpServletRequestBuilder
 	 * {@code "/accounts/1"} as opposed to {@code "/main/accounts/1"}.
 	 * If specified here, the servletPath must start with a "/" and must not
 	 * end with a "/".
-	 * @see javax.servlet.http.HttpServletRequest#getServletPath()
+	 * @see jakarta.servlet.http.HttpServletRequest#getServletPath()
 	 */
 	public MockHttpServletRequestBuilder servletPath(String servletPath) {
 		if (StringUtils.hasText(servletPath)) {
@@ -224,7 +227,7 @@ public class MockHttpServletRequestBuilder
 	 * by removing the contextPath and the servletPath from the requestURI and using any
 	 * remaining part. If specified here, the pathInfo must start with a "/".
 	 * <p>If specified, the pathInfo will be used as-is.
-	 * @see javax.servlet.http.HttpServletRequest#getPathInfo()
+	 * @see jakarta.servlet.http.HttpServletRequest#getPathInfo()
 	 */
 	public MockHttpServletRequestBuilder pathInfo(@Nullable String pathInfo) {
 		if (StringUtils.hasText(pathInfo)) {
@@ -527,6 +530,17 @@ public class MockHttpServletRequestBuilder
 	}
 
 	/**
+	 * Set the remote address of the request.
+	 * @param remoteAddress the remote address (IP)
+	 * @since 6.0.10
+	 */
+	public MockHttpServletRequestBuilder remoteAddress(String remoteAddress) {
+		Assert.hasText(remoteAddress, "'remoteAddress' must not be null or blank");
+		this.remoteAddress = remoteAddress;
+		return this;
+	}
+
+	/**
 	 * An extension point for further initialization of {@link MockHttpServletRequest}
 	 * in ways not built directly into the {@code MockHttpServletRequestBuilder}.
 	 * Implementation of this interface can have builder-style methods themselves
@@ -561,11 +575,9 @@ public class MockHttpServletRequestBuilder
 		if (parent == null) {
 			return this;
 		}
-		if (!(parent instanceof MockHttpServletRequestBuilder)) {
+		if (!(parent instanceof MockHttpServletRequestBuilder parentBuilder)) {
 			throw new IllegalArgumentException("Cannot merge with [" + parent.getClass().getName() + "]");
 		}
-		MockHttpServletRequestBuilder parentBuilder = (MockHttpServletRequestBuilder) parent;
-
 		if (!StringUtils.hasText(this.contextPath)) {
 			this.contextPath = parentBuilder.contextPath;
 		}
@@ -584,6 +596,9 @@ public class MockHttpServletRequestBuilder
 		}
 		if (this.session == null) {
 			this.session = parentBuilder.session;
+		}
+		if (this.remoteAddress == null) {
+			this.remoteAddress = parentBuilder.remoteAddress;
 		}
 
 		if (this.characterEncoding == null) {
@@ -688,6 +703,9 @@ public class MockHttpServletRequestBuilder
 		}
 		if (this.principal != null) {
 			request.setUserPrincipal(this.principal);
+		}
+		if (this.remoteAddress != null) {
+			request.setRemoteAddr(this.remoteAddress);
 		}
 		if (this.session != null) {
 			request.setSession(this.session);
@@ -806,7 +824,7 @@ public class MockHttpServletRequestBuilder
 		HttpInputMessage message = new HttpInputMessage() {
 			@Override
 			public InputStream getBody() {
-				return (content != null ? new ByteArrayInputStream(content) : StreamUtils.emptyInput());
+				return (content != null ? new ByteArrayInputStream(content) : InputStream.nullInputStream());
 			}
 			@Override
 			public HttpHeaders getHeaders() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -170,6 +170,33 @@ public class TypeDescriptor implements Serializable {
 		return this.resolvableType.getSource();
 	}
 
+
+	/**
+	 * Create a type descriptor for a nested type declared within this descriptor.
+	 * @param nestingLevel the nesting level of the collection/array element or
+	 * map key/value declaration within the property
+	 * @return the nested type descriptor at the specified nesting level, or
+	 * {@code null} if it could not be obtained
+	 * @since 6.1
+	 */
+	@Nullable
+	public TypeDescriptor nested(int nestingLevel) {
+		ResolvableType nested = this.resolvableType;
+		for (int i = 0; i < nestingLevel; i++) {
+			if (Object.class == nested.getType()) {
+				// Could be a collection type but we don't know about its element type,
+				// so let's just assume there is an element type of type Object...
+			}
+			else {
+				nested = nested.getNested(2);
+			}
+		}
+		if (nested == ResolvableType.NONE) {
+			return null;
+		}
+		return getRelatedIfResolvable(nested);
+	}
+
 	/**
 	 * Narrows this {@link TypeDescriptor} by setting its type to the class of the
 	 * provided value.
@@ -238,7 +265,7 @@ public class TypeDescriptor implements Serializable {
 	 * <p>As of Spring Framework 4.2, this method supports arbitrary levels
 	 * of meta-annotations.
 	 * @param annotationType the annotation type
-	 * @return <tt>true</tt> if the annotation is present
+	 * @return {@code true} if the annotation is present
 	 */
 	public boolean hasAnnotation(Class<? extends Annotation> annotationType) {
 		if (this.annotatedElement.isEmpty()) {
@@ -273,8 +300,8 @@ public class TypeDescriptor implements Serializable {
 	 * On the other hand, {@code valueOf(Number.class).isAssignableTo(valueOf(Integer.class))}
 	 * returns {@code false} because, while all Integers are Numbers, not all Numbers are Integers.
 	 * <p>For arrays, collections, and maps, element and key/value types are checked if declared.
-	 * For example, a List&lt;String&gt; field value is assignable to a Collection&lt;CharSequence&gt;
-	 * field, but List&lt;Number&gt; is not assignable to List&lt;Integer&gt;.
+	 * For example, a {@code List<String>} field value is assignable to a {@code Collection<CharSequence>}
+	 * field, but {@code List<Number>} is not assignable to {@code List<Integer>}.
 	 * @return {@code true} if this type is assignable to the type represented by the provided
 	 * type descriptor
 	 * @see #getObjectType()
@@ -335,9 +362,9 @@ public class TypeDescriptor implements Serializable {
 			return new TypeDescriptor(getResolvableType().getComponentType(), null, getAnnotations());
 		}
 		if (Stream.class.isAssignableFrom(getType())) {
-			return getRelatedIfResolvable(this, getResolvableType().as(Stream.class).getGeneric(0));
+			return getRelatedIfResolvable(getResolvableType().as(Stream.class).getGeneric(0));
 		}
-		return getRelatedIfResolvable(this, getResolvableType().asCollection().getGeneric(0));
+		return getRelatedIfResolvable(getResolvableType().asCollection().getGeneric(0));
 	}
 
 	/**
@@ -380,7 +407,7 @@ public class TypeDescriptor implements Serializable {
 	@Nullable
 	public TypeDescriptor getMapKeyTypeDescriptor() {
 		Assert.state(isMap(), "Not a [java.util.Map]");
-		return getRelatedIfResolvable(this, getResolvableType().asMap().getGeneric(0));
+		return getRelatedIfResolvable(getResolvableType().asMap().getGeneric(0));
 	}
 
 	/**
@@ -417,7 +444,7 @@ public class TypeDescriptor implements Serializable {
 	@Nullable
 	public TypeDescriptor getMapValueTypeDescriptor() {
 		Assert.state(isMap(), "Not a [java.util.Map]");
-		return getRelatedIfResolvable(this, getResolvableType().asMap().getGeneric(1));
+		return getRelatedIfResolvable(getResolvableType().asMap().getGeneric(1));
 	}
 
 	/**
@@ -443,6 +470,14 @@ public class TypeDescriptor implements Serializable {
 	}
 
 	@Nullable
+	private TypeDescriptor getRelatedIfResolvable(ResolvableType type) {
+		if (type.resolve() == null) {
+			return null;
+		}
+		return new TypeDescriptor(type, null, getAnnotations());
+	}
+
+	@Nullable
 	private TypeDescriptor narrow(@Nullable Object value, @Nullable TypeDescriptor typeDescriptor) {
 		if (typeDescriptor != null) {
 			return typeDescriptor.narrow(value);
@@ -458,10 +493,9 @@ public class TypeDescriptor implements Serializable {
 		if (this == other) {
 			return true;
 		}
-		if (!(other instanceof TypeDescriptor)) {
+		if (!(other instanceof TypeDescriptor otherDesc)) {
 			return false;
 		}
-		TypeDescriptor otherDesc = (TypeDescriptor) other;
 		if (getType() != otherDesc.getType()) {
 			return false;
 		}
@@ -523,7 +557,7 @@ public class TypeDescriptor implements Serializable {
 	/**
 	 * Create a new type descriptor for an object.
 	 * <p>Use this factory method to introspect a source object before asking the
-	 * conversion system to convert it to some another type.
+	 * conversion system to convert it to some other type.
 	 * <p>If the provided object is {@code null}, returns {@code null}, else calls
 	 * {@link #valueOf(Class)} to build a TypeDescriptor from the object's class.
 	 * @param source the source object
@@ -576,7 +610,7 @@ public class TypeDescriptor implements Serializable {
 	/**
 	 * Create a new type descriptor from a {@link java.util.Map} type.
 	 * <p>Useful for converting to typed Maps.
-	 * <p>For example, a Map&lt;String, String&gt; could be converted to a Map&lt;Id, EmailAddress&gt;
+	 * <p>For example, a {@code Map<String, String>} could be converted to a {@code Map<Id, EmailAddress>}
 	 * by converting to a targetType built with this method:
 	 * The method call to construct such a TypeDescriptor would look something like:
 	 * <pre class="code">
@@ -646,7 +680,7 @@ public class TypeDescriptor implements Serializable {
 			throw new IllegalArgumentException("MethodParameter nesting level must be 1: " +
 					"use the nestingLevel parameter to specify the desired nestingLevel for nested type traversal");
 		}
-		return nested(new TypeDescriptor(methodParameter), nestingLevel);
+		return new TypeDescriptor(methodParameter).nested(nestingLevel);
 	}
 
 	/**
@@ -672,7 +706,7 @@ public class TypeDescriptor implements Serializable {
 	 */
 	@Nullable
 	public static TypeDescriptor nested(Field field, int nestingLevel) {
-		return nested(new TypeDescriptor(field), nestingLevel);
+		return new TypeDescriptor(field).nested(nestingLevel);
 	}
 
 	/**
@@ -698,33 +732,7 @@ public class TypeDescriptor implements Serializable {
 	 */
 	@Nullable
 	public static TypeDescriptor nested(Property property, int nestingLevel) {
-		return nested(new TypeDescriptor(property), nestingLevel);
-	}
-
-	@Nullable
-	private static TypeDescriptor nested(TypeDescriptor typeDescriptor, int nestingLevel) {
-		ResolvableType nested = typeDescriptor.resolvableType;
-		for (int i = 0; i < nestingLevel; i++) {
-			if (Object.class == nested.getType()) {
-				// Could be a collection type but we don't know about its element type,
-				// so let's just assume there is an element type of type Object...
-			}
-			else {
-				nested = nested.getNested(2);
-			}
-		}
-		if (nested == ResolvableType.NONE) {
-			return null;
-		}
-		return getRelatedIfResolvable(typeDescriptor, nested);
-	}
-
-	@Nullable
-	private static TypeDescriptor getRelatedIfResolvable(TypeDescriptor source, ResolvableType type) {
-		if (type.resolve() == null) {
-			return null;
-		}
-		return new TypeDescriptor(type, null, source.getAnnotations());
+		return new TypeDescriptor(property).nested(nestingLevel);
 	}
 
 
@@ -781,8 +789,8 @@ public class TypeDescriptor implements Serializable {
 
 		@Override
 		public boolean equals(@Nullable Object other) {
-			return (this == other || (other instanceof AnnotatedElementAdapter &&
-					Arrays.equals(this.annotations, ((AnnotatedElementAdapter) other).annotations)));
+			return (this == other || (other instanceof AnnotatedElementAdapter that &&
+					Arrays.equals(this.annotations, that.annotations)));
 		}
 
 		@Override

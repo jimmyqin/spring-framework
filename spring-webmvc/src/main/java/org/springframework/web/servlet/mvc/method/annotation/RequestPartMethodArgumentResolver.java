@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.core.MethodParameter;
+import org.springframework.core.ResolvableType;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.lang.Nullable;
@@ -48,7 +49,7 @@ import org.springframework.web.multipart.support.RequestPartServletServerHttpReq
  * <ul>
  * <li>Annotated with @{@link RequestPart}
  * <li>Of type {@link MultipartFile} in conjunction with Spring's {@link MultipartResolver} abstraction
- * <li>Of type {@code javax.servlet.http.Part} in conjunction with Servlet 3.0 multipart requests
+ * <li>Of type {@code jakarta.servlet.http.Part} in conjunction with Servlet multipart requests
  * </ul>
  *
  * <p>When a parameter is annotated with {@code @RequestPart}, the content of the part is
@@ -98,7 +99,7 @@ public class RequestPartMethodArgumentResolver extends AbstractMessageConverterM
 	 * <ul>
 	 * <li>annotated with {@code @RequestPart}
 	 * <li>of type {@link MultipartFile} unless annotated with {@code @RequestParam}
-	 * <li>of type {@code javax.servlet.http.Part} unless annotated with
+	 * <li>of type {@code jakarta.servlet.http.Part} unless annotated with
 	 * {@code @RequestParam}
 	 * </ul>
 	 */
@@ -139,7 +140,8 @@ public class RequestPartMethodArgumentResolver extends AbstractMessageConverterM
 				HttpInputMessage inputMessage = new RequestPartServletServerHttpRequest(servletRequest, name);
 				arg = readWithMessageConverters(inputMessage, parameter, parameter.getNestedGenericParameterType());
 				if (binderFactory != null) {
-					WebDataBinder binder = binderFactory.createBinder(request, arg, name);
+					ResolvableType type = ResolvableType.forMethodParameter(parameter);
+					WebDataBinder binder = binderFactory.createBinder(request, arg, name, type);
 					if (arg != null) {
 						validateIfApplicable(binder, parameter);
 						if (binder.getBindingResult().hasErrors() && isBindExceptionRequired(binder, parameter)) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,13 @@ package org.springframework.test.web.servlet.client;
 import java.io.StringWriter;
 import java.net.URI;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-import javax.servlet.http.Cookie;
-
+import jakarta.servlet.http.Cookie;
 import reactor.core.publisher.Mono;
 
 import org.springframework.core.ResolvableType;
@@ -57,6 +57,7 @@ import org.springframework.test.web.servlet.RequestBuilder;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
@@ -83,9 +84,16 @@ public class MockMvcHttpConnector implements ClientHttpConnector {
 
 	private final MockMvc mockMvc;
 
+	private final List<RequestPostProcessor> requestPostProcessors;
+
 
 	public MockMvcHttpConnector(MockMvc mockMvc) {
+		this(mockMvc, Collections.emptyList());
+	}
+
+	private MockMvcHttpConnector(MockMvc mockMvc, List<RequestPostProcessor> requestPostProcessors) {
 		this.mockMvc = mockMvc;
+		this.requestPostProcessors = new ArrayList<>(requestPostProcessors);
 	}
 
 
@@ -136,6 +144,8 @@ public class MockMvcHttpConnector implements ClientHttpConnector {
 			}
 		}
 
+		this.requestPostProcessors.forEach(requestBuilder::with);
+
 		return requestBuilder;
 	}
 
@@ -167,9 +177,9 @@ public class MockMvcHttpConnector implements ClientHttpConnector {
 									buffer.read(partBytes);
 									DataBufferUtils.release(buffer);
 
-									// Adapt to javax.servlet.http.Part...
-									MockPart mockPart = (part instanceof FilePart ?
-											new MockPart(part.name(), ((FilePart) part).filename(), partBytes) :
+									// Adapt to jakarta.servlet.http.Part...
+									MockPart mockPart = (part instanceof FilePart filePart ?
+											new MockPart(part.name(), filePart.filename(), partBytes) :
 											new MockPart(part.name(), partBytes));
 									mockPart.getHeaders().putAll(part.headers());
 									requestBuilder.part(mockPart);
@@ -198,6 +208,7 @@ public class MockMvcHttpConnector implements ClientHttpConnector {
 							.path(cookie.getPath())
 							.secure(cookie.getSecure())
 							.httpOnly(cookie.isHttpOnly())
+							.sameSite(cookie.getAttribute("samesite"))
 							.build();
 			clientResponse.getCookies().add(httpCookie.getName(), httpCookie);
 		}
@@ -205,6 +216,15 @@ public class MockMvcHttpConnector implements ClientHttpConnector {
 		DefaultDataBuffer dataBuffer = DefaultDataBufferFactory.sharedInstance.wrap(bytes);
 		clientResponse.setBody(Mono.just(dataBuffer));
 		return clientResponse;
+	}
+
+	/**
+	 * Create a new instance that applies the given {@link RequestPostProcessor}s
+	 * to performed requests.
+	 * @since 6.1
+	 */
+	public MockMvcHttpConnector with(List<RequestPostProcessor> postProcessors) {
+		return new MockMvcHttpConnector(this.mockMvc, postProcessors);
 	}
 
 

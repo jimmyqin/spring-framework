@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.framework.ProxyProcessorSupport;
 import org.springframework.aop.framework.adapter.AdvisorAdapterRegistry;
 import org.springframework.aop.framework.adapter.GlobalAdvisorAdapterRegistry;
+import org.springframework.aop.target.EmptyTargetSource;
 import org.springframework.aop.target.SingletonTargetSource;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.PropertyValues;
@@ -138,7 +139,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	private final Set<String> targetSourcedBeans = Collections.newSetFromMap(new ConcurrentHashMap<>(16));
 
 	// 缓存bean的原始对象
-	private final Map<Object, Object> earlyProxyReferences = new ConcurrentHashMap<>(16);
+	private final Map<Object, Object> earlyBeanReferences = new ConcurrentHashMap<>(16);
 
 	private final Map<Object, Class<?>> proxyTypes = new ConcurrentHashMap<>(16);
 
@@ -148,7 +149,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	/**
 	 * Set whether the proxy should be frozen, preventing advice
 	 * from being added to it once it is created.
-	 * <p>Overridden from the super class to prevent the proxy configuration
+	 * <p>Overridden from the superclass to prevent the proxy configuration
 	 * from being frozen before the proxy is created.
 	 */
 	@Override
@@ -233,6 +234,30 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	}
 
 	@Override
+	public Class<?> determineBeanType(Class<?> beanClass, String beanName) {
+		Object cacheKey = getCacheKey(beanClass, beanName);
+		Class<?> proxyType = this.proxyTypes.get(cacheKey);
+		if (proxyType == null) {
+			TargetSource targetSource = getCustomTargetSource(beanClass, beanName);
+			if (targetSource != null) {
+				if (StringUtils.hasLength(beanName)) {
+					this.targetSourcedBeans.add(beanName);
+				}
+			}
+			else {
+				targetSource = EmptyTargetSource.forClass(beanClass);
+			}
+			Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(beanClass, beanName, targetSource);
+			if (specificInterceptors != DO_NOT_PROXY) {
+				this.advisedBeans.put(cacheKey, Boolean.TRUE);
+				proxyType = createProxyClass(beanClass, beanName, specificInterceptors, targetSource);
+				this.proxyTypes.put(cacheKey, proxyType);
+			}
+		}
+		return (proxyType != null ? proxyType : beanClass);
+	}
+
+	@Override
 	@Nullable
 	public Constructor<?>[] determineCandidateConstructors(Class<?> beanClass, String beanName) {
 		return null;
@@ -252,7 +277,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		// 后续执行bean的初始化后处理器postProcessAfterInitialization方法，从中判断是否需要创建bean的动态代理
 		// 没有aop的情况下直接返回原始对象，有aop的情况下返回代理对象
 		//earlyProxyReferences缓存bean的原始对象
-		this.earlyProxyReferences.put(cacheKey, bean);
+		this.earlyBeanReferences.put(cacheKey, bean);
 		//真正负责创建动态代理的地方
 		return wrapIfNecessary(bean, beanName, cacheKey);
 	}
@@ -315,7 +340,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 			//在没有循环依赖的普通情况下 earlyProxyReferences.remove(cacheKey)返回的是null
 			// remove方法会返回存储的对象
 			// remove返回的bean和此处的bean都是原始的bean
-			if (this.earlyProxyReferences.remove(cacheKey) != bean) {
+			if (this.earlyBeanReferences.remove(cacheKey) != bean) {
 				// 创建动态代理
 				return wrapIfNecessary(bean, beanName, cacheKey);
 			}
@@ -466,8 +491,20 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	protected Object createProxy(Class<?> beanClass, @Nullable String beanName,
 			@Nullable Object[] specificInterceptors, TargetSource targetSource) {
 
-		if (this.beanFactory instanceof ConfigurableListableBeanFactory) {
-			AutoProxyUtils.exposeTargetClass((ConfigurableListableBeanFactory) this.beanFactory, beanName, beanClass);
+		return buildProxy(beanClass, beanName, specificInterceptors, targetSource, false);
+	}
+
+	private Class<?> createProxyClass(Class<?> beanClass, @Nullable String beanName,
+			@Nullable Object[] specificInterceptors, TargetSource targetSource) {
+
+		return (Class<?>) buildProxy(beanClass, beanName, specificInterceptors, targetSource, true);
+	}
+
+	private Object buildProxy(Class<?> beanClass, @Nullable String beanName,
+			@Nullable Object[] specificInterceptors, TargetSource targetSource, boolean classOnly) {
+
+		if (this.beanFactory instanceof ConfigurableListableBeanFactory clbf) {
+			AutoProxyUtils.exposeTargetClass(clbf, beanName, beanClass);
 		}
 
 		ProxyFactory proxyFactory = new ProxyFactory();
@@ -504,11 +541,11 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 
 		// Use original ClassLoader if bean class not locally loaded in overriding class loader
 		ClassLoader classLoader = getProxyClassLoader();
-		if (classLoader instanceof SmartClassLoader && classLoader != beanClass.getClassLoader()) {
-			classLoader = ((SmartClassLoader) classLoader).getOriginalClassLoader();
+		if (classLoader instanceof SmartClassLoader smartClassLoader && classLoader != beanClass.getClassLoader()) {
+			classLoader = smartClassLoader.getOriginalClassLoader();
 		}
 		//创建代理
-		return proxyFactory.getProxy(classLoader);
+		return (classOnly ? proxyFactory.getProxyClass(classLoader) : proxyFactory.getProxy(classLoader));
 	}
 
 	/**
@@ -521,8 +558,8 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	 * @see AutoProxyUtils#shouldProxyTargetClass
 	 */
 	protected boolean shouldProxyTargetClass(Class<?> beanClass, @Nullable String beanName) {
-		return (this.beanFactory instanceof ConfigurableListableBeanFactory &&
-				AutoProxyUtils.shouldProxyTargetClass((ConfigurableListableBeanFactory) this.beanFactory, beanName));
+		return (this.beanFactory instanceof ConfigurableListableBeanFactory clbf &&
+				AutoProxyUtils.shouldProxyTargetClass(clbf, beanName));
 	}
 
 	/**
@@ -586,7 +623,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	 */
 	private Advisor[] resolveInterceptorNames() {
 		BeanFactory bf = this.beanFactory;
-		ConfigurableBeanFactory cbf = (bf instanceof ConfigurableBeanFactory ? (ConfigurableBeanFactory) bf : null);
+		ConfigurableBeanFactory cbf = (bf instanceof ConfigurableBeanFactory _cbf ? _cbf : null);
 		List<Advisor> advisors = new ArrayList<>();
 		for (String beanName : this.interceptorNames) {
 			if (cbf == null || !cbf.isCurrentlyInCreation(beanName)) {

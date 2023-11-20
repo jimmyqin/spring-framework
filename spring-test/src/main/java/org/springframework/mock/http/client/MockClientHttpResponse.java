@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.mock.http.MockHttpInputMessage;
 import org.springframework.util.Assert;
@@ -28,66 +29,70 @@ import org.springframework.util.Assert;
  * Mock implementation of {@link ClientHttpResponse}.
  *
  * @author Rossen Stoyanchev
+ * @author Sam Brannen
  * @since 3.2
  */
 public class MockClientHttpResponse extends MockHttpInputMessage implements ClientHttpResponse {
 
-	private final int statusCode;
+	private final HttpStatusCode statusCode;
 
 
 	/**
-	 * Constructor with response body as a byte array.
+	 * Create a {@code MockClientHttpResponse} with an empty response body and
+	 * HTTP status code {@link HttpStatus#OK OK}.
+	 * @since 6.0.3
 	 */
-	public MockClientHttpResponse(byte[] body, HttpStatus statusCode) {
-		super(body);
-		Assert.notNull(statusCode, "HttpStatus is required");
-		this.statusCode = statusCode.value();
+	public MockClientHttpResponse() {
+		this(new byte[0], HttpStatus.OK);
 	}
 
 	/**
-	 * Variant of {@link #MockClientHttpResponse(byte[], HttpStatus)} with a
-	 * custom HTTP status code.
+	 * Create a {@code MockClientHttpResponse} with response body as a byte array
+	 * and the supplied HTTP status code.
+	 */
+	public MockClientHttpResponse(byte[] body, HttpStatusCode statusCode) {
+		super(body);
+		Assert.notNull(statusCode, "HttpStatusCode must not be null");
+		this.statusCode = statusCode;
+	}
+
+	/**
+	 * Create a {@code MockClientHttpResponse} with response body as a byte array
+	 * and a custom HTTP status code.
 	 * @since 5.3.17
 	 */
 	public MockClientHttpResponse(byte[] body, int statusCode) {
+		this(body, HttpStatusCode.valueOf(statusCode));
+	}
+
+	/**
+	 * Create a {@code MockClientHttpResponse} with response body as {@link InputStream}
+	 * and the supplied HTTP status code.
+	 */
+	public MockClientHttpResponse(InputStream body, HttpStatusCode statusCode) {
 		super(body);
+		Assert.notNull(statusCode, "HttpStatusCode must not be null");
 		this.statusCode = statusCode;
 	}
 
 	/**
-	 * Constructor with response body as InputStream.
-	 */
-	public MockClientHttpResponse(InputStream body, HttpStatus statusCode) {
-		super(body);
-		Assert.notNull(statusCode, "HttpStatus is required");
-		this.statusCode = statusCode.value();
-	}
-
-	/**
-	 * Variant of {@link #MockClientHttpResponse(InputStream, HttpStatus)} with a
-	 * custom HTTP status code.
+	 * Create a {@code MockClientHttpResponse} with response body as {@link InputStream}
+	 * and a custom HTTP status code.
 	 * @since 5.3.17
 	 */
 	public MockClientHttpResponse(InputStream body, int statusCode) {
-		super(body);
-		this.statusCode = statusCode;
+		this(body, HttpStatusCode.valueOf(statusCode));
 	}
 
 
 	@Override
-	public HttpStatus getStatusCode() {
-		return HttpStatus.valueOf(this.statusCode);
-	}
-
-	@Override
-	public int getRawStatusCode() {
+	public HttpStatusCode getStatusCode() {
 		return this.statusCode;
 	}
 
 	@Override
 	public String getStatusText() {
-		HttpStatus status = HttpStatus.resolve(this.statusCode);
-		return (status != null ? status.getReasonPhrase() : "");
+		return (this.statusCode instanceof HttpStatus status ? status.getReasonPhrase() : "");
 	}
 
 	@Override

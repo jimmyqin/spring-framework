@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -161,8 +161,8 @@ final class BitsCronField extends CronField {
 				return ValueRange.of(result, result);
 			}
 			else {
-				int min = Integer.parseInt(value.substring(0, hyphenPos));
-				int max = Integer.parseInt(value.substring(hyphenPos + 1));
+				int min = Integer.parseInt(value, 0, hyphenPos, 10);
+				int max = Integer.parseInt(value, hyphenPos + 1, value.length(), 10);
 				min = type.checkValidValue(min);
 				max = type.checkValidValue(max);
 				if (type == Type.DAY_OF_WEEK && min == 7) {
@@ -247,7 +247,7 @@ final class BitsCronField extends CronField {
 	}
 
 	private void clearBit(int index) {
-		this.bits &=  ~(1L << index);
+		this.bits &= ~(1L << index);
 	}
 
 	@Override
@@ -256,14 +256,13 @@ final class BitsCronField extends CronField {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof BitsCronField)) {
+		if (!(o instanceof BitsCronField other)) {
 			return false;
 		}
-		BitsCronField other = (BitsCronField) o;
 		return type() == other.type() && this.bits == other.bits;
 	}
 

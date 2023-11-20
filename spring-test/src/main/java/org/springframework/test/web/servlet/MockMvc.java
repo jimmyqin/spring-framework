@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,13 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.servlet.AsyncContext;
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.Filter;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponseWrapper;
 
 import org.springframework.beans.Mergeable;
 import org.springframework.lang.Nullable;
@@ -56,9 +56,11 @@ import org.springframework.web.servlet.DispatcherServlet;
  * MockMvc mockMvc = webAppContextSetup(wac).build();
  *
  * mockMvc.perform(get("/form"))
- *     .andExpect(status().isOk())
- *     .andExpect(content().mimeType("text/html"))
- *     .andExpect(forwardedUrl("/WEB-INF/layouts/main.jsp"));
+ *     .andExpectAll(
+ *         status().isOk(),
+ *         content().contentType("text/html"),
+ *         forwardedUrl("/WEB-INF/layouts/main.jsp")
+ *     );
  * </pre>
  *
  * @author Rossen Stoyanchev
@@ -163,8 +165,8 @@ public final class MockMvc {
 	 * @see org.springframework.test.web.servlet.result.MockMvcResultMatchers
 	 */
 	public ResultActions perform(RequestBuilder requestBuilder) throws Exception {
-		if (this.defaultRequestBuilder != null && requestBuilder instanceof Mergeable) {
-			requestBuilder = (RequestBuilder) ((Mergeable) requestBuilder).merge(this.defaultRequestBuilder);
+		if (this.defaultRequestBuilder != null && requestBuilder instanceof Mergeable mergeable) {
+			requestBuilder = (RequestBuilder) mergeable.merge(this.defaultRequestBuilder);
 		}
 
 		MockHttpServletRequest request = requestBuilder.buildRequest(this.servletContext);
@@ -185,8 +187,8 @@ public final class MockMvc {
 			mockResponse.setDefaultCharacterEncoding(this.defaultResponseCharacterEncoding.name());
 		}
 
-		if (requestBuilder instanceof SmartRequestBuilder) {
-			request = ((SmartRequestBuilder) requestBuilder).postProcessRequest(request);
+		if (requestBuilder instanceof SmartRequestBuilder smartRequestBuilder) {
+			request = smartRequestBuilder.postProcessRequest(request);
 		}
 
 		MvcResult mvcResult = new DefaultMvcResult(request, mockResponse);
@@ -225,8 +227,8 @@ public final class MockMvc {
 	}
 
 	private MockHttpServletResponse unwrapResponseIfNecessary(ServletResponse servletResponse) {
-		while (servletResponse instanceof HttpServletResponseWrapper) {
-			servletResponse = ((HttpServletResponseWrapper) servletResponse).getResponse();
+		while (servletResponse instanceof HttpServletResponseWrapper wrapper) {
+			servletResponse = wrapper.getResponse();
 		}
 		Assert.isInstanceOf(MockHttpServletResponse.class, servletResponse);
 		return (MockHttpServletResponse) servletResponse;

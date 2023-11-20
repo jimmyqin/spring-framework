@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,9 @@ import org.springframework.util.Assert;
  * @author Rossen Stoyanchev
  * @since 4.0
  * @param <T> the callback result type
+ * @deprecated as of 6.0, with no concrete replacement
  */
+@Deprecated(since = "6.0")
 public class ListenableFutureCallbackRegistry<T> {
 
 	private final Queue<SuccessCallback<? super T>> successCallbacks = new ArrayDeque<>(1);
@@ -56,16 +58,12 @@ public class ListenableFutureCallbackRegistry<T> {
 		Assert.notNull(callback, "'callback' must not be null");
 		synchronized (this.mutex) {
 			switch (this.state) {
-				case NEW:
+				case NEW -> {
 					this.successCallbacks.add(callback);
 					this.failureCallbacks.add(callback);
-					break;
-				case SUCCESS:
-					notifySuccess(callback);
-					break;
-				case FAILURE:
-					notifyFailure(callback);
-					break;
+				}
+				case SUCCESS -> notifySuccess(callback);
+				case FAILURE -> notifyFailure(callback);
 			}
 		}
 	}
@@ -99,12 +97,8 @@ public class ListenableFutureCallbackRegistry<T> {
 		Assert.notNull(callback, "'callback' must not be null");
 		synchronized (this.mutex) {
 			switch (this.state) {
-				case NEW:
-					this.successCallbacks.add(callback);
-					break;
-				case SUCCESS:
-					notifySuccess(callback);
-					break;
+				case NEW -> this.successCallbacks.add(callback);
+				case SUCCESS -> notifySuccess(callback);
 			}
 		}
 	}
@@ -118,12 +112,8 @@ public class ListenableFutureCallbackRegistry<T> {
 		Assert.notNull(callback, "'callback' must not be null");
 		synchronized (this.mutex) {
 			switch (this.state) {
-				case NEW:
-					this.failureCallbacks.add(callback);
-					break;
-				case FAILURE:
-					notifyFailure(callback);
-					break;
+				case NEW -> this.failureCallbacks.add(callback);
+				case FAILURE -> notifyFailure(callback);
 			}
 		}
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,7 @@ package org.springframework.jms.core.support;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.jms.ConnectionFactory;
-
+import jakarta.jms.ConnectionFactory;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.jms.core.JmsTemplate;
@@ -36,7 +35,7 @@ class JmsGatewaySupportTests {
 
 	@Test
 	void testJmsGatewaySupportWithConnectionFactory() throws Exception {
-		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
+		ConnectionFactory mockConnectionFactory = mock();
 		final List<String> test = new ArrayList<>(1);
 		JmsGatewaySupport gateway = new JmsGatewaySupport() {
 			@Override
@@ -48,7 +47,7 @@ class JmsGatewaySupportTests {
 		gateway.afterPropertiesSet();
 		assertThat(gateway.getConnectionFactory()).as("Correct ConnectionFactory").isEqualTo(mockConnectionFactory);
 		assertThat(gateway.getJmsTemplate().getConnectionFactory()).as("Correct JmsTemplate").isEqualTo(mockConnectionFactory);
-		assertThat(test.size()).as("initGateway called").isEqualTo(1);
+		assertThat(test).as("initGateway called").hasSize(1);
 	}
 
 	@Test
@@ -64,7 +63,7 @@ class JmsGatewaySupportTests {
 		gateway.setJmsTemplate(template);
 		gateway.afterPropertiesSet();
 		assertThat(gateway.getJmsTemplate()).as("Correct JmsTemplate").isEqualTo(template);
-		assertThat(test.size()).as("initGateway called").isEqualTo(1);
+		assertThat(test).as("initGateway called").hasSize(1);
 	}
 
 }

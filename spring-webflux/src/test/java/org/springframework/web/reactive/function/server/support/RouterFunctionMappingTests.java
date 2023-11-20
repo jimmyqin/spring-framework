@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import reactor.test.StepVerifier;
 
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.http.codec.ServerCodecConfigurer;
+import org.springframework.http.server.reactive.observation.ServerRequestObservationContext;
 import org.springframework.web.reactive.HandlerMapping;
 import org.springframework.web.reactive.function.server.HandlerFunction;
 import org.springframework.web.reactive.function.server.RouterFunction;
@@ -36,10 +37,11 @@ import org.springframework.web.util.pattern.PathPattern;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
+ * Tests for {@link RouterFunctionMapping}.
  * @author Arjen Poutsma
  * @author Brian Clozel
  */
-public class RouterFunctionMappingTests {
+class RouterFunctionMappingTests {
 
 	private final ServerCodecConfigurer codecConfigurer = ServerCodecConfigurer.create();
 
@@ -113,6 +115,7 @@ public class RouterFunctionMappingTests {
 	}
 
 	@Test
+	@SuppressWarnings("removal")
 	void mappedRequestShouldHoldAttributes() {
 		HandlerFunction<ServerResponse> handlerFunction = request -> ServerResponse.ok().build();
 		RouterFunction<ServerResponse> routerFunction = RouterFunctions.route()
@@ -132,6 +135,10 @@ public class RouterFunctionMappingTests {
 		PathPattern matchingPattern = exchange.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
 		assertThat(matchingPattern).isNotNull();
 		assertThat(matchingPattern.getPatternString()).isEqualTo("/match");
+		assertThat(org.springframework.web.filter.reactive.ServerHttpObservationFilter.findObservationContext(exchange))
+				.hasValueSatisfying(context -> assertThat(context.getPathPattern()).isEqualTo(matchingPattern.getPatternString()));
+		assertThat(ServerRequestObservationContext.findCurrent(exchange.getAttributes()))
+				.hasValueSatisfying(context -> assertThat(context.getPathPattern()).isEqualTo(matchingPattern.getPatternString()));
 
 		ServerRequest serverRequest = exchange.getAttribute(RouterFunctions.REQUEST_ATTRIBUTE);
 		assertThat(serverRequest).isNotNull();
@@ -140,8 +147,13 @@ public class RouterFunctionMappingTests {
 		assertThat(handler).isEqualTo(handlerFunction);
 	}
 
+	@SuppressWarnings("removal")
 	private ServerWebExchange createExchange(String urlTemplate) {
-		return MockServerWebExchange.from(MockServerHttpRequest.get(urlTemplate));
+		MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest.get(urlTemplate));
+		ServerRequestObservationContext observationContext = new ServerRequestObservationContext(exchange.getRequest(), exchange.getResponse(), exchange.getAttributes());
+		exchange.getAttributes().put(org.springframework.web.filter.reactive.ServerHttpObservationFilter.CURRENT_OBSERVATION_CONTEXT_ATTRIBUTE, observationContext);
+		exchange.getAttributes().put(ServerRequestObservationContext.CURRENT_OBSERVATION_CONTEXT_ATTRIBUTE, observationContext);
+		return exchange;
 	}
 
 }

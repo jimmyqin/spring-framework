@@ -33,14 +33,11 @@ import org.xmlunit.diff.NodeMatcher;
 
 import org.springframework.core.testfixture.xml.XmlContent;
 import org.springframework.http.MediaType;
-import org.springframework.http.MockHttpInputMessage;
-import org.springframework.http.MockHttpOutputMessage;
+import org.springframework.web.testfixture.http.MockHttpInputMessage;
+import org.springframework.web.testfixture.http.MockHttpOutputMessage;
 
 import static java.util.Collections.singletonMap;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
 
 /**
  * @author Arjen Poutsma
@@ -74,14 +71,14 @@ public class AtomFeedHttpMessageConverterTests {
 
 	@Test
 	public void read() throws IOException {
-		InputStream inputStream = spy(getClass().getResourceAsStream("atom.xml"));
+		InputStream inputStream = getClass().getResourceAsStream("atom.xml");
 		MockHttpInputMessage inputMessage = new MockHttpInputMessage(inputStream);
 		inputMessage.getHeaders().setContentType(ATOM_XML_UTF8);
 		Feed result = converter.read(Feed.class, inputMessage);
 		assertThat(result.getTitle()).isEqualTo("title");
 		assertThat(result.getSubtitle().getValue()).isEqualTo("subtitle");
 		List<?> entries = result.getEntries();
-		assertThat(entries.size()).isEqualTo(2);
+		assertThat(entries).hasSize(2);
 
 		Entry entry1 = (Entry) entries.get(0);
 		assertThat(entry1.getId()).isEqualTo("id1");
@@ -90,7 +87,6 @@ public class AtomFeedHttpMessageConverterTests {
 		Entry entry2 = (Entry) entries.get(1);
 		assertThat(entry2.getId()).isEqualTo("id2");
 		assertThat(entry2.getTitle()).isEqualTo("title2");
-		verify(inputStream, never()).close();
 	}
 
 	@Test
@@ -123,7 +119,6 @@ public class AtomFeedHttpMessageConverterTests {
 		NodeMatcher nm = new DefaultNodeMatcher(ElementSelectors.byName);
 		assertThat(XmlContent.of(outputMessage.getBodyAsString(StandardCharsets.UTF_8)))
 				.isSimilarToIgnoringWhitespace(expected, nm);
-		verify(outputMessage.getBody(), never()).close();
 	}
 
 	@Test

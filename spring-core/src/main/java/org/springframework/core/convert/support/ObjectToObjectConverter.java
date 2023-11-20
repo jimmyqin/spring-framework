@@ -99,8 +99,7 @@ final class ObjectToObjectConverter implements ConditionalGenericConverter {
 		Executable executable = getValidatedExecutable(targetClass, sourceClass);
 
 		try {
-			if (executable instanceof Method) {
-				Method method = (Method) executable;
+			if (executable instanceof Method method) {
 				ReflectionUtils.makeAccessible(method);
 				if (!Modifier.isStatic(method.getModifiers())) {
 					return method.invoke(source);
@@ -109,10 +108,9 @@ final class ObjectToObjectConverter implements ConditionalGenericConverter {
 					return method.invoke(null, source);
 				}
 			}
-			else if (executable instanceof Constructor) {
-				Constructor<?> ctor = (Constructor<?>) executable;
-				ReflectionUtils.makeAccessible(ctor);
-				return ctor.newInstance(source);
+			else if (executable instanceof Constructor<?> constructor) {
+				ReflectionUtils.makeAccessible(constructor);
+				return constructor.newInstance(source);
 			}
 		}
 		catch (InvocationTargetException ex) {
@@ -158,15 +156,13 @@ final class ObjectToObjectConverter implements ConditionalGenericConverter {
 	}
 
 	private static boolean isApplicable(Executable executable, Class<?> sourceClass) {
-		if (executable instanceof Method) {
-			Method method = (Method) executable;
+		if (executable instanceof Method method) {
 			return (!Modifier.isStatic(method.getModifiers()) ?
 					ClassUtils.isAssignable(method.getDeclaringClass(), sourceClass) :
 					method.getParameterTypes()[0] == sourceClass);
 		}
-		else if (executable instanceof Constructor) {
-			Constructor<?> ctor = (Constructor<?>) executable;
-			return (ctor.getParameterTypes()[0] == sourceClass);
+		else if (executable instanceof Constructor<?> constructor) {
+			return (constructor.getParameterTypes()[0] == sourceClass);
 		}
 		else {
 			return false;

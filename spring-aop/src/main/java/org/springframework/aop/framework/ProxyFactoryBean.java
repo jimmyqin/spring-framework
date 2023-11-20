@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -265,27 +265,31 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 	 * Return the type of the proxy. Will check the singleton instance if
 	 * already created, else fall back to the proxy interface (in case of just
 	 * a single one), the target bean type, or the TargetSource's target class.
-	 * @see org.springframework.aop.TargetSource#getTargetClass
+	 * @see org.springframework.aop.framework.AopProxy#getProxyClass
 	 */
 	@Override
+	@Nullable
 	public Class<?> getObjectType() {
 		synchronized (this) {
 			if (this.singletonInstance != null) {
 				return this.singletonInstance.getClass();
 			}
 		}
-		Class<?>[] ifcs = getProxiedInterfaces();
-		if (ifcs.length == 1) {
-			return ifcs[0];
+		try {
+			// This might be incomplete since it potentially misses introduced interfaces
+			// from Advisors that will be lazily retrieved via setInterceptorNames.
+			return createAopProxy().getProxyClass(this.proxyClassLoader);
 		}
-		else if (ifcs.length > 1) {
-			return createCompositeInterface(ifcs);
-		}
-		else if (this.targetName != null && this.beanFactory != null) {
-			return this.beanFactory.getType(this.targetName);
-		}
-		else {
-			return getTargetClass();
+		catch (AopConfigException ex) {
+			if (getTargetClass() == null) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Failed to determine early proxy class: " + ex.getMessage());
+				}
+				return null;
+			}
+			else {
+				throw ex;
+			}
 		}
 	}
 
@@ -294,19 +298,6 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 		return this.singleton;
 	}
 
-
-	/**
-	 * Create a composite interface Class for the given interfaces,
-	 * implementing the given interfaces in one single Class.
-	 * <p>The default implementation builds a JDK proxy class for the
-	 * given interfaces.
-	 * @param interfaces the interfaces to merge
-	 * @return the merged interface as Class
-	 * @see java.lang.reflect.Proxy#getProxyClass
-	 */
-	protected Class<?> createCompositeInterface(Class<?>[] interfaces) {
-		return ClassUtils.createCompositeInterface(interfaces, this.proxyClassLoader);
-	}
 
 	/**
 	 * Return the singleton instance of this class's proxy object,
@@ -437,12 +428,11 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 			// Materialize interceptor chain from bean names.
 			for (String name : this.interceptorNames) {
 				if (name.endsWith(GLOBAL_SUFFIX)) {
-					if (!(this.beanFactory instanceof ListableBeanFactory)) {
+					if (!(this.beanFactory instanceof ListableBeanFactory lbf)) {
 						throw new AopConfigException(
 								"Can only use global advisors or interceptors with a ListableBeanFactory");
 					}
-					addGlobalAdvisors((ListableBeanFactory) this.beanFactory,
-							name.substring(0, name.length() - GLOBAL_SUFFIX.length()));
+					addGlobalAdvisors(lbf, name.substring(0, name.length() - GLOBAL_SUFFIX.length()));
 				}
 
 				else {
@@ -476,17 +466,16 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 		Advisor[] advisors = getAdvisors();
 		List<Advisor> freshAdvisors = new ArrayList<>(advisors.length);
 		for (Advisor advisor : advisors) {
-			if (advisor instanceof PrototypePlaceholderAdvisor) {
-				PrototypePlaceholderAdvisor pa = (PrototypePlaceholderAdvisor) advisor;
+			if (advisor instanceof PrototypePlaceholderAdvisor ppa) {
 				if (logger.isDebugEnabled()) {
-					logger.debug("Refreshing bean named '" + pa.getBeanName() + "'");
+					logger.debug("Refreshing bean named '" + ppa.getBeanName() + "'");
 				}
 				// Replace the placeholder with a fresh prototype instance resulting from a getBean lookup
 				if (this.beanFactory == null) {
 					throw new IllegalStateException("No BeanFactory available anymore (probably due to " +
-							"serialization) - cannot resolve prototype advisor '" + pa.getBeanName() + "'");
+							"serialization) - cannot resolve prototype advisor '" + ppa.getBeanName() + "'");
 				}
-				Object bean = this.beanFactory.getBean(pa.getBeanName());
+				Object bean = this.beanFactory.getBean(ppa.getBeanName());
 				Advisor refreshedAdvisor = namedBeanToAdvisor(bean);
 				freshAdvisors.add(refreshedAdvisor);
 			}
@@ -558,7 +547,7 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 				logger.debug("Refreshing target with name '" + this.targetName + "'");
 			}
 			Object target = this.beanFactory.getBean(this.targetName);
-			return (target instanceof TargetSource ? (TargetSource) target : new SingletonTargetSource(target));
+			return (target instanceof TargetSource targetSource ? targetSource : new SingletonTargetSource(target));
 		}
 	}
 
@@ -628,11 +617,6 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 
 		@Override
 		public Advice getAdvice() {
-			throw new UnsupportedOperationException("Cannot invoke methods: " + this.message);
-		}
-
-		@Override
-		public boolean isPerInstance() {
 			throw new UnsupportedOperationException("Cannot invoke methods: " + this.message);
 		}
 

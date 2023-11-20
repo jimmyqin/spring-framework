@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,9 @@ package org.springframework.build.optional;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.attributes.Usage;
-import org.gradle.api.plugins.JavaPlugin;
-import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.plugins.JavaBasePlugin;
+import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSetContainer;
-import org.gradle.plugins.ide.eclipse.EclipsePlugin;
-import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 
 /**
  * A {@code Plugin} that adds support for Maven-style optional dependencies. Creates a new
@@ -43,11 +40,11 @@ public class OptionalDependenciesPlugin implements Plugin<Project> {
 
 	@Override
 	public void apply(Project project) {
-		Configuration optional = project.getConfigurations().create("optional");
+		Configuration optional = project.getConfigurations().create(OPTIONAL_CONFIGURATION_NAME);
 		optional.setCanBeConsumed(false);
 		optional.setCanBeResolved(false);
-		project.getPlugins().withType(JavaPlugin.class, (javaPlugin) -> {
-			SourceSetContainer sourceSets = project.getConvention().getPlugin(JavaPluginConvention.class)
+		project.getPlugins().withType(JavaBasePlugin.class, (javaBasePlugin) -> {
+			SourceSetContainer sourceSets = project.getExtensions().getByType(JavaPluginExtension.class)
 					.getSourceSets();
 			sourceSets.all((sourceSet) -> {
 				project.getConfigurations().getByName(sourceSet.getCompileClasspathConfigurationName()).extendsFrom(optional);

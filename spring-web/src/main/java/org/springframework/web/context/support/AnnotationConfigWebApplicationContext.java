@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ import org.springframework.web.context.ContextLoader;
  * implementation which accepts <em>component classes</em> as input &mdash; in particular
  * {@link org.springframework.context.annotation.Configuration @Configuration}
  * classes, but also plain {@link org.springframework.stereotype.Component @Component}
- * classes as well as JSR-330 compliant classes using {@code javax.inject} annotations.
+ * classes as well as JSR-330 compliant classes using {@code jakarta.inject} annotations.
  *
  * <p>Allows for registering classes one by one (specifying class names as config
  * locations) as well as via classpath scanning (specifying base packages as config
@@ -63,8 +63,8 @@ import org.springframework.web.context.ContextLoader;
  * ContextLoader and/or "contextClass" init-param for FrameworkServlet must be set to
  * the fully-qualified name of this class.
  *
- * <p>As of Spring 3.1, this class may also be directly instantiated and injected into
- * Spring's {@code DispatcherServlet} or {@code ContextLoaderListener} when using the
+ * <p>This class may also be directly instantiated and injected into Spring's
+ * {@code DispatcherServlet} or {@code ContextLoaderListener} when using the
  * {@link org.springframework.web.WebApplicationInitializer WebApplicationInitializer}
  * code-based alternative to {@code web.xml}. See its Javadoc for details and usage examples.
  *
@@ -195,7 +195,7 @@ public class AnnotationConfigWebApplicationContext extends AbstractRefreshableWe
 	 * and if class loading fails (i.e. a {@code ClassNotFoundException} is raised),
 	 * assume the value is a package and attempt to scan it for component classes.
 	 * <p>Enables the default set of annotation configuration post processors, such that
-	 * {@code @Autowired}, {@code @Required}, and associated annotations can be used.
+	 * {@code @Autowired} and associated annotations can be used.
 	 * <p>Configuration class bean definitions are registered with generated bean
 	 * definition names unless the {@code value} attribute is provided to the stereotype
 	 * annotation.

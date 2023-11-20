@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.CachingConfigurerSupport;
+import org.springframework.cache.annotation.CachingConfigurer;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.interceptor.CacheErrorHandler;
 import org.springframework.cache.interceptor.CacheResolver;
@@ -92,7 +92,7 @@ public class AspectJEnableCachingIsolatedTests {
 			load(MultiCacheManagerConfig.class);
 		}
 		catch (IllegalStateException ex) {
-			assertThat(ex.getMessage().contains("bean of type CacheManager")).isTrue();
+			assertThat(ex.getMessage()).contains("bean of type CacheManager");
 		}
 	}
 
@@ -107,7 +107,7 @@ public class AspectJEnableCachingIsolatedTests {
 			load(MultiCacheManagerConfigurer.class, EnableCachingConfig.class);
 		}
 		catch (IllegalStateException ex) {
-			assertThat(ex.getMessage().contains("implementations of CachingConfigurer")).isTrue();
+			assertThat(ex.getMessage()).contains("implementations of CachingConfigurer");
 		}
 	}
 
@@ -117,7 +117,7 @@ public class AspectJEnableCachingIsolatedTests {
 			load(EmptyConfig.class);
 		}
 		catch (IllegalStateException ex) {
-			assertThat(ex.getMessage().contains("no bean of type CacheManager")).isTrue();
+			assertThat(ex.getMessage()).contains("no bean of type CacheManager");
 		}
 	}
 
@@ -143,7 +143,7 @@ public class AspectJEnableCachingIsolatedTests {
 
 	@Configuration
 	@EnableCaching(mode = AdviceMode.ASPECTJ)
-	static class EnableCachingConfig extends CachingConfigurerSupport {
+	static class EnableCachingConfig implements CachingConfigurer {
 
 		@Override
 		@Bean
@@ -220,7 +220,7 @@ public class AspectJEnableCachingIsolatedTests {
 
 	@Configuration
 	@EnableCaching(mode = AdviceMode.ASPECTJ)
-	static class MultiCacheManagerConfigurer extends CachingConfigurerSupport {
+	static class MultiCacheManagerConfigurer implements CachingConfigurer {
 
 		@Bean
 		public CacheManager cm1() {
@@ -246,7 +246,7 @@ public class AspectJEnableCachingIsolatedTests {
 
 	@Configuration
 	@EnableCaching(mode = AdviceMode.ASPECTJ)
-	static class EmptyConfigSupportConfig extends CachingConfigurerSupport {
+	static class EmptyConfigSupportConfig implements CachingConfigurer {
 
 		@Bean
 		public CacheManager cm() {
@@ -258,7 +258,7 @@ public class AspectJEnableCachingIsolatedTests {
 
 	@Configuration
 	@EnableCaching(mode = AdviceMode.ASPECTJ)
-	static class FullCachingConfig extends CachingConfigurerSupport {
+	static class FullCachingConfig implements CachingConfigurer {
 
 		@Override
 		@Bean

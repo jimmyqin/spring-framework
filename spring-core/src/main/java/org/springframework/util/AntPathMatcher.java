@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,7 +113,7 @@ public class AntPathMatcher implements PathMatcher {
 	 * @since 4.1
 	 */
 	public AntPathMatcher(String pathSeparator) {
-		Assert.notNull(pathSeparator, "'pathSeparator' is required");
+		Assert.notNull(pathSeparator, "'pathSeparator' must not be null");
 		this.pathSeparator = pathSeparator;
 		this.pathSeparatorPatternCache = new PathSeparatorPatternCache(pathSeparator);
 	}
@@ -275,6 +275,10 @@ public class AntPathMatcher implements PathMatcher {
 			if (!matchStrings(pattDir, pathDirs[pathIdxEnd], uriTemplateVariables)) {
 				return false;
 			}
+			if (pattIdxEnd == (pattDirs.length - 1)
+					&& pattern.endsWith(this.pathSeparator) != path.endsWith(this.pathSeparator)) {
+				return false;
+			}
 			pattIdxEnd--;
 			pathIdxEnd--;
 		}
@@ -398,7 +402,7 @@ public class AntPathMatcher implements PathMatcher {
 	protected String[] tokenizePattern(String pattern) {
 		String[] tokenized = null;
 		Boolean cachePatterns = this.cachePatterns;
-		if (cachePatterns == null || cachePatterns.booleanValue()) {
+		if (cachePatterns == null || cachePatterns) {
 			tokenized = this.tokenizedPatternCache.get(pattern);
 		}
 		if (tokenized == null) {
@@ -410,7 +414,7 @@ public class AntPathMatcher implements PathMatcher {
 				deactivatePatternCache();
 				return tokenized;
 			}
-			if (cachePatterns == null || cachePatterns.booleanValue()) {
+			if (cachePatterns == null || cachePatterns) {
 				this.tokenizedPatternCache.put(pattern, tokenized);
 			}
 		}
@@ -454,7 +458,7 @@ public class AntPathMatcher implements PathMatcher {
 	protected AntPathStringMatcher getStringMatcher(String pattern) {
 		AntPathStringMatcher matcher = null;
 		Boolean cachePatterns = this.cachePatterns;
-		if (cachePatterns == null || cachePatterns.booleanValue()) {
+		if (cachePatterns == null || cachePatterns) {
 			matcher = this.stringMatcherCache.get(pattern);
 		}
 		if (matcher == null) {
@@ -466,7 +470,7 @@ public class AntPathMatcher implements PathMatcher {
 				deactivatePatternCache();
 				return matcher;
 			}
-			if (cachePatterns == null || cachePatterns.booleanValue()) {
+			if (cachePatterns == null || cachePatterns) {
 				this.stringMatcherCache.put(pattern, matcher);
 			}
 		}
@@ -525,7 +529,7 @@ public class AntPathMatcher implements PathMatcher {
 	 * the first pattern contains a file extension match (e.g., {@code *.html}).
 	 * In that case, the second pattern will be merged into the first. Otherwise,
 	 * an {@code IllegalArgumentException} will be thrown.
-	 * <h3>Examples</h3>
+	 * <h4>Examples</h4>
 	 * <table border="1">
 	 * <tr><th>Pattern 1</th><th>Pattern 2</th><th>Result</th></tr>
 	 * <tr><td>{@code null}</td><td>{@code null}</td><td>&nbsp;</td></tr>
@@ -638,7 +642,7 @@ public class AntPathMatcher implements PathMatcher {
 	/**
 	 * Tests whether a string matches against a pattern via a {@link Pattern}.
 	 * <p>The pattern may contain special characters: '*' means zero or more characters; '?' means one and
-	 * only one character; '{' and '}' indicate a URI template pattern. For example <tt>/users/{user}</tt>.
+	 * only one character; '{' and '}' indicate a URI template pattern. For example {@code /users/{user}}.
 	 */
 	protected static class AntPathStringMatcher {
 

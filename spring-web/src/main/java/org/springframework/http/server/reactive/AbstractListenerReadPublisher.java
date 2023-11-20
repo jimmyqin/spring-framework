@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,8 @@ import org.springframework.util.Assert;
  * event-listener read APIs and Reactive Streams.
  *
  * <p>Specifically a base class for reading from the HTTP request body with
- * Servlet 3.1 non-blocking I/O and Undertow XNIO as well as handling incoming
- * WebSocket messages with standard Java WebSocket (JSR-356), Jetty, and
+ * Servlet non-blocking I/O and Undertow XNIO as well as handling incoming
+ * WebSocket messages with standard Jakarta WebSocket (JSR-356), Jetty, and
  * Undertow.
  *
  * @author Arjen Poutsma
@@ -58,7 +58,7 @@ public abstract class AbstractListenerReadPublisher<T> implements Publisher<T> {
 	 */
 	protected static Log rsReadLogger = LogDelegateFactory.getHiddenLog(AbstractListenerReadPublisher.class);
 
-	final static DataBuffer EMPTY_BUFFER = DefaultDataBufferFactory.sharedInstance.allocateBuffer(0);
+	static final DataBuffer EMPTY_BUFFER = DefaultDataBufferFactory.sharedInstance.allocateBuffer(0);
 
 
 	private final AtomicReference<State> state = new AtomicReference<>(State.UNSUBSCRIBED);
@@ -239,7 +239,7 @@ public abstract class AbstractListenerReadPublisher<T> implements Publisher<T> {
 
 	private boolean handlePendingCompletionOrError() {
 		State state = this.state.get();
-		if (state == State.DEMAND || state  == State.NO_DEMAND) {
+		if (state == State.DEMAND || state == State.NO_DEMAND) {
 			if (this.completionPending) {
 				rsReadLogger.trace(getLogPrefix() + "Processing pending completion");
 				this.state.get().onAllDataRead(this);

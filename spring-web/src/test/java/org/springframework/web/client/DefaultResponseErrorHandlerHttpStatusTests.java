@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,14 +59,14 @@ class DefaultResponseErrorHandlerHttpStatusTests {
 
 	private final DefaultResponseErrorHandler handler = new DefaultResponseErrorHandler();
 
-	private final ClientHttpResponse response = mock(ClientHttpResponse.class);
+	private final ClientHttpResponse response = mock();
 
 
 	@ParameterizedTest(name = "[{index}] error: [{0}]")
 	@DisplayName("hasError() returns true")
 	@MethodSource("errorCodes")
 	void hasErrorTrue(HttpStatus httpStatus) throws Exception {
-		given(this.response.getRawStatusCode()).willReturn(httpStatus.value());
+		given(this.response.getStatusCode()).willReturn(httpStatus);
 		assertThat(this.handler.hasError(this.response)).isTrue();
 	}
 
@@ -77,7 +77,7 @@ class DefaultResponseErrorHandlerHttpStatusTests {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.TEXT_PLAIN);
 
-		given(this.response.getRawStatusCode()).willReturn(httpStatus.value());
+		given(this.response.getStatusCode()).willReturn(httpStatus);
 		given(this.response.getHeaders()).willReturn(headers);
 
 		assertThatExceptionOfType(expectedExceptionClass).isThrownBy(() -> this.handler.handleError(this.response));

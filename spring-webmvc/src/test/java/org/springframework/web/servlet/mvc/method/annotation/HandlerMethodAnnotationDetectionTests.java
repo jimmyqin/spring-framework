@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,7 +82,7 @@ class HandlerMethodAnnotationDetectionTests {
 				// args(ParameterizedSubclassDoesNotOverrideConcreteImplementationsFromGenericAbstractSuperclass.class, true), // CGLIB proxy
 				// args(ParameterizedSubclassDoesNotOverrideConcreteImplementationsFromGenericAbstractSuperclass.class, false),
 
-				args(InterfaceController.class, true), // JDK dynamic proxy
+				// args(InterfaceController.class, true), // JDK dynamic proxy (gh-22154: no longer supported))
 				args(InterfaceController.class, false),
 
 				args(ParameterizedInterfaceController.class, false), // no AOP
@@ -187,7 +187,7 @@ class HandlerMethodAnnotationDetectionTests {
 
 
 	@Controller
-	static abstract class MappingAbstractClass {
+	abstract static class MappingAbstractClass {
 
 		@InitBinder
 		public abstract void initBinder(WebDataBinder dataBinder, String pattern);
@@ -259,6 +259,7 @@ class HandlerMethodAnnotationDetectionTests {
 	 * <p>JDK Dynamic proxy: All annotations must be on the interface.
 	 * <p>Without AOP: Annotations can be on interface methods except parameter annotations.
 	 */
+	@Controller
 	static class InterfaceController implements MappingInterface {
 
 		@Override
@@ -285,7 +286,7 @@ class HandlerMethodAnnotationDetectionTests {
 
 
 	@Controller
-	static abstract class MappingGenericAbstractClass<A, B, C> {
+	abstract static class MappingGenericAbstractClass<A, B, C> {
 
 		@InitBinder
 		public abstract void initBinder(WebDataBinder dataBinder, A thePattern);
@@ -333,7 +334,7 @@ class HandlerMethodAnnotationDetectionTests {
 
 
 	@Controller
-	static abstract class MappedGenericAbstractClassWithConcreteImplementations<A, B, C> {
+	abstract static class MappedGenericAbstractClassWithConcreteImplementations<A, B, C> {
 
 		@InitBinder
 		public abstract void initBinder(WebDataBinder dataBinder, A thePattern);
@@ -377,7 +378,7 @@ class HandlerMethodAnnotationDetectionTests {
 
 
 	@Controller
-	static abstract class GenericAbstractClassDeclaresDefaultMappings<A, B, C> {
+	abstract static class GenericAbstractClassDeclaresDefaultMappings<A, B, C> {
 
 		@InitBinder
 		public abstract void initBinder(WebDataBinder dataBinder, A thePattern);
@@ -452,6 +453,7 @@ class HandlerMethodAnnotationDetectionTests {
 	 * <p>All annotations can be on interface except parameter annotations.
 	 * <p>Cannot be used as JDK dynamic proxy since parameterized interface does not contain type information.
 	 */
+	@Controller
 	static class ParameterizedInterfaceController implements MappingGenericInterface<String, Date, Date> {
 
 		@Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,10 +68,8 @@ public class StandardMethodMetadata implements MethodMetadata {
 	 * {@link org.springframework.core.annotation.AnnotationAttributes} for compatibility
 	 * with ASM-based {@link AnnotationMetadata} implementations
 	 * @since 3.1.1
-	 * @deprecated since 5.2 in favor of obtaining instances via {@link AnnotationMetadata}
 	 */
-	@Deprecated
-	public StandardMethodMetadata(Method introspectedMethod, boolean nestedAnnotationsAsMap) {
+	StandardMethodMetadata(Method introspectedMethod, boolean nestedAnnotationsAsMap) {
 		Assert.notNull(introspectedMethod, "Method must not be null");
 		this.introspectedMethod = introspectedMethod;
 		this.nestedAnnotationsAsMap = nestedAnnotationsAsMap;
@@ -151,10 +149,11 @@ public class StandardMethodMetadata implements MethodMetadata {
 				annotationName, classValuesAsString, false);
 	}
 
+
 	@Override
-	public boolean equals(@Nullable Object obj) {
-		return ((this == obj) || ((obj instanceof StandardMethodMetadata) &&
-				this.introspectedMethod.equals(((StandardMethodMetadata) obj).introspectedMethod)));
+	public boolean equals(@Nullable Object other) {
+		return (this == other || (other instanceof StandardMethodMetadata that &&
+				this.introspectedMethod.equals(that.introspectedMethod)));
 	}
 
 	@Override

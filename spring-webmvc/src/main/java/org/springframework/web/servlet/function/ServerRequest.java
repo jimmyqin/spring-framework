@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,11 +29,11 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.Consumer;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
-import javax.servlet.http.Part;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.Part;
 
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -48,6 +48,8 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MultiValueMap;
+import org.springframework.validation.BindException;
+import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.util.ServletRequestPathUtils;
 import org.springframework.web.util.UriBuilder;
 
@@ -66,15 +68,14 @@ public interface ServerRequest {
 	 * @return the HTTP method as an HttpMethod enum value, or {@code null}
 	 * if not resolvable (e.g. in case of a non-standard HTTP method)
 	 */
-	@Nullable
-	default HttpMethod method() {
-		return HttpMethod.resolve(methodName());
-	}
+	HttpMethod method();
 
 	/**
 	 * Get the name of the HTTP method.
 	 * @return the HTTP method as a String
+	 * @deprecated in favor of {@link #method()}
 	 */
+	@Deprecated
 	String methodName();
 
 	/**
@@ -148,6 +149,30 @@ public interface ServerRequest {
 	 * @return the body
 	 */
 	<T> T body(ParameterizedTypeReference<T> bodyType) throws ServletException, IOException;
+
+	/**
+	 * Bind to this request and return an instance of the given type.
+	 * @param bindType the type of class to bind this request to
+	 * @param <T> the type to bind to
+	 * @return a constructed and bound instance of {@code bindType}
+	 * @throws BindException in case of binding errors
+	 * @since 6.1
+	 */
+	default <T> T bind(Class<T> bindType) throws BindException {
+		return bind(bindType, dataBinder -> {});
+	}
+
+	/**
+	 * Bind to this request and return an instance of the given type.
+	 * @param bindType the type of class to bind this request to
+	 * @param dataBinderCustomizer used to customize the data binder, e.g. set
+	 * (dis)allowed fields
+	 * @param <T> the type to bind to
+	 * @return a constructed and bound instance of {@code bindType}
+	 * @throws BindException in case of binding errors
+	 * @since 6.1
+	 */
+	<T> T bind(Class<T> bindType, Consumer<WebDataBinder> dataBinderCustomizer) throws BindException;
 
 	/**
 	 * Get the request attribute value if present.
@@ -476,7 +501,7 @@ public interface ServerRequest {
 
 		/**
 		 * Add the given header value(s) under the given name.
-		 * @param headerName  the header name
+		 * @param headerName the header name
 		 * @param headerValues the header value(s)
 		 * @return this builder
 		 * @see HttpHeaders#add(String, String)

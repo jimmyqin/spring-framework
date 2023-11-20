@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -31,6 +30,7 @@ import reactor.core.publisher.Mono;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.client.reactive.ClientHttpRequest;
@@ -50,6 +50,7 @@ import org.springframework.util.MultiValueMap;
  * respectively.
  *
  * @author Rossen Stoyanchev
+ * @author Sam Brannen
  * @since 5.0
  * @see EntityExchangeResult
  * @see FluxExchangeResult
@@ -58,8 +59,8 @@ public class ExchangeResult {
 
 	private static final Log logger = LogFactory.getLog(ExchangeResult.class);
 
-	private static final List<MediaType> PRINTABLE_MEDIA_TYPES = Arrays.asList(
-			MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML,
+	private static final List<MediaType> PRINTABLE_MEDIA_TYPES = List.of(
+			MediaType.parseMediaType("application/*+json"), MediaType.APPLICATION_XML,
 			MediaType.parseMediaType("text/*"), MediaType.APPLICATION_FORM_URLENCODED);
 
 
@@ -168,21 +169,11 @@ public class ExchangeResult {
 		return this.requestBody.block(this.timeout);
 	}
 
-
 	/**
-	 * Return the HTTP status code as an {@link HttpStatus} enum value.
+	 * Return the HTTP status code as an {@link HttpStatusCode} value.
 	 */
-	public HttpStatus getStatus() {
+	public HttpStatusCode getStatus() {
 		return this.response.getStatusCode();
-	}
-
-	/**
-	 * Return the HTTP status code (potentially non-standard and not resolvable
-	 * through the {@link HttpStatus} enum) as an integer.
-	 * @since 5.1.10
-	 */
-	public int getRawStatusCode() {
-		return this.response.getRawStatusCode();
 	}
 
 	/**
@@ -248,11 +239,19 @@ public class ExchangeResult {
 				"\n" +
 				formatBody(getRequestHeaders().getContentType(), this.requestBody) + "\n" +
 				"\n" +
-				"< " + getStatus() + " " + getStatus().getReasonPhrase() + "\n" +
+				"< " + formatStatus(getStatus()) + "\n" +
 				"< " + formatHeaders(getResponseHeaders(), "\n< ") + "\n" +
 				"\n" +
 				formatBody(getResponseHeaders().getContentType(), this.responseBody) +"\n" +
 				formatMockServerResult();
+	}
+
+	private String formatStatus(HttpStatusCode statusCode) {
+		String result = statusCode.toString();
+		if (statusCode instanceof HttpStatus status) {
+			result += " " + status.getReasonPhrase();
+		}
+		return result;
 	}
 
 	private String formatHeaders(HttpHeaders headers, String delimiter) {

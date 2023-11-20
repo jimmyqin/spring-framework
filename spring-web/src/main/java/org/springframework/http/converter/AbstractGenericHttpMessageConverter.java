@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ public abstract class AbstractGenericHttpMessageConverter<T> extends AbstractHtt
 
 	@Override
 	public boolean canRead(Type type, @Nullable Class<?> contextClass, @Nullable MediaType mediaType) {
-		return (type instanceof Class ? canRead((Class<?>) type, mediaType) : canRead(mediaType));
+		return (type instanceof Class<?> clazz ? canRead(clazz, mediaType) : canRead(mediaType));
 	}
 
 	@Override
@@ -88,18 +88,28 @@ public abstract class AbstractGenericHttpMessageConverter<T> extends AbstractHtt
 		// 处理请求头的ContentType和ContentLength长度
 		addDefaultHeaders(headers, t, contentType);
 
-		if (outputMessage instanceof StreamingHttpOutputMessage) {
-			StreamingHttpOutputMessage streamingOutputMessage = (StreamingHttpOutputMessage) outputMessage;
-			streamingOutputMessage.setBody(outputStream -> writeInternal(t, type, new HttpOutputMessage() {
+		if (outputMessage instanceof StreamingHttpOutputMessage streamingOutputMessage) {
+			streamingOutputMessage.setBody(new StreamingHttpOutputMessage.Body() {
 				@Override
-				public OutputStream getBody() {
-					return outputStream;
+				public void writeTo(OutputStream outputStream) throws IOException {
+					writeInternal(t, type, new HttpOutputMessage() {
+						@Override
+						public OutputStream getBody() {
+							return outputStream;
+						}
+
+						@Override
+						public HttpHeaders getHeaders() {
+							return headers;
+						}
+					});
 				}
+
 				@Override
-				public HttpHeaders getHeaders() {
-					return headers;
+				public boolean repeatable() {
+					return supportsRepeatableWrites(t);
 				}
-			}));
+			});
 		}
 		else {
 			// 把响应内容写入到输出流中

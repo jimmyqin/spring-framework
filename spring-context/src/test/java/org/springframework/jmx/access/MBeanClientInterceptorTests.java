@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,9 +31,11 @@ import javax.management.remote.JMXConnectorServer;
 import javax.management.remote.JMXConnectorServerFactory;
 import javax.management.remote.JMXServiceURL;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.aop.framework.ProxyFactory;
+import org.springframework.core.testfixture.net.TestSocketUtils;
 import org.springframework.jmx.AbstractMBeanServerTests;
 import org.springframework.jmx.IJmxTestBean;
 import org.springframework.jmx.JmxTestBean;
@@ -177,7 +179,7 @@ class MBeanClientInterceptorTests extends AbstractMBeanServerTests {
 		assumeTrue(runTests);
 
 		@SuppressWarnings("deprecation")
-		final int port = org.springframework.util.SocketUtils.findAvailableTcpPort();
+		final int port = TestSocketUtils.findAvailableTcpPort();
 
 		JMXServiceURL url = new JMXServiceURL("service:jmx:jmxmp://localhost:" + port);
 		JMXConnectorServer connector = JMXConnectorServerFactory.newJMXConnectorServer(url, null, getServer());
@@ -197,9 +199,8 @@ class MBeanClientInterceptorTests extends AbstractMBeanServerTests {
 			connector.start();
 		}
 		catch (BindException ex) {
-			System.out.println("Skipping remainder of JMX LazyConnectionToRemote test because binding to local port ["
-					+ port + "] failed: " + ex.getMessage());
-			return;
+			Assumptions.abort("Skipping remainder of JMX LazyConnectionToRemote test because binding to local port [" +
+					port + "] failed: " + ex.getMessage());
 		}
 
 		// should now be able to access data via the lazy proxy

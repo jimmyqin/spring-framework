@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,8 +29,8 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Tests for {@link TypeMappedAnnotation}. See also
- * {@link MergedAnnotationsTests} for a much more extensive collection of tests.
+ * Tests for {@link TypeMappedAnnotation}. See also {@link MergedAnnotationsTests}
+ * for a much more extensive collection of tests.
  *
  * @author Phillip Webb
  */
@@ -65,7 +65,7 @@ class TypeMappedAnnotationTests {
 				WithConventionAliasToMetaAnnotation.class,
 				ConventionAliasToMetaAnnotation.class,
 				ConventionAliasMetaAnnotationTarget.class);
-		assertThat(annotation.getString("value")).isEqualTo("");
+		assertThat(annotation.getString("value")).isEmpty();
 		assertThat(annotation.getString("convention")).isEqualTo("convention");
 	}
 
@@ -182,8 +182,7 @@ class TypeMappedAnnotationTests {
 	}
 
 	@Retention(RetentionPolicy.RUNTIME)
-	@ConventionAliasMetaAnnotationTarget
-	@interface ConventionAliasToMetaAnnotation {
+	@interface ConventionAliasMetaAnnotationTarget {
 
 		String value() default "";
 
@@ -191,10 +190,13 @@ class TypeMappedAnnotationTests {
 	}
 
 	@Retention(RetentionPolicy.RUNTIME)
-	@interface ConventionAliasMetaAnnotationTarget {
+	@ConventionAliasMetaAnnotationTarget
+	@interface ConventionAliasToMetaAnnotation {
 
 		String value() default "";
 
+		// Do NOT use @AliasFor here until Spring 6.1
+		// @AliasFor(annotation = ConventionAliasMetaAnnotationTarget.class)
 		String convention() default "";
 	}
 

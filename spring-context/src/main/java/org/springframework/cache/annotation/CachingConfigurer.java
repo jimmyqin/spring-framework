@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,8 @@ import org.springframework.lang.Nullable;
 
 /**
  * Interface to be implemented by @{@link org.springframework.context.annotation.Configuration
- * Configuration} classes annotated with @{@link EnableCaching} that wish or need to
- * specify explicitly how caches are resolved and how keys are generated for annotation-driven
+ * Configuration} classes annotated with @{@link EnableCaching} that wish or need to specify
+ * explicitly how caches are resolved and how keys are generated for annotation-driven
  * cache management.
  *
  * <p>See @{@link EnableCaching} for general examples and context; see
@@ -50,7 +50,7 @@ public interface CachingConfigurer {
 	 * <pre class="code">
 	 * &#064;Configuration
 	 * &#064;EnableCaching
-	 * public class AppConfig extends CachingConfigurerSupport {
+	 * public class AppConfig implements CachingConfigurer {
 	 *     &#064;Bean // important!
 	 *     &#064;Override
 	 *     public CacheManager cacheManager() {
@@ -77,7 +77,7 @@ public interface CachingConfigurer {
 	 * <pre class="code">
 	 * &#064;Configuration
 	 * &#064;EnableCaching
-	 * public class AppConfig extends CachingConfigurerSupport {
+	 * public class AppConfig implements CachingConfigurer {
 	 *     &#064;Bean // important!
 	 *     &#064;Override
 	 *     public CacheResolver cacheResolver() {
@@ -100,7 +100,7 @@ public interface CachingConfigurer {
 	 * <pre class="code">
 	 * &#064;Configuration
 	 * &#064;EnableCaching
-	 * public class AppConfig extends CachingConfigurerSupport {
+	 * public class AppConfig implements CachingConfigurer {
 	 *     &#064;Bean // important!
 	 *     &#064;Override
 	 *     public KeyGenerator keyGenerator() {
@@ -125,7 +125,7 @@ public interface CachingConfigurer {
 	 * <pre class="code">
 	 * &#064;Configuration
 	 * &#064;EnableCaching
-	 * public class AppConfig extends CachingConfigurerSupport {
+	 * public class AppConfig implements CachingConfigurer {
 	 *     &#064;Bean // important!
 	 *     &#064;Override
 	 *     public CacheErrorHandler errorHandler() {

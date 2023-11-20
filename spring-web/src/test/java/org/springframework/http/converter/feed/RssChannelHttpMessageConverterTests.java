@@ -29,14 +29,11 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.core.testfixture.xml.XmlContent;
 import org.springframework.http.MediaType;
-import org.springframework.http.MockHttpInputMessage;
-import org.springframework.http.MockHttpOutputMessage;
+import org.springframework.web.testfixture.http.MockHttpInputMessage;
+import org.springframework.web.testfixture.http.MockHttpOutputMessage;
 
 import static java.util.Collections.singletonMap;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
 
 /**
  * @author Arjen Poutsma
@@ -59,7 +56,7 @@ public class RssChannelHttpMessageConverterTests {
 
 	@Test
 	public void read() throws IOException {
-		InputStream inputStream = spy(getClass().getResourceAsStream("rss.xml"));
+		InputStream inputStream = getClass().getResourceAsStream("rss.xml");
 		MockHttpInputMessage inputMessage = new MockHttpInputMessage(inputStream);
 		inputMessage.getHeaders().setContentType(RSS_XML_UTF8);
 		Channel result = converter.read(Channel.class, inputMessage);
@@ -68,14 +65,13 @@ public class RssChannelHttpMessageConverterTests {
 		assertThat(result.getDescription()).isEqualTo("description");
 
 		List<?> items = result.getItems();
-		assertThat(items.size()).isEqualTo(2);
+		assertThat(items).hasSize(2);
 
 		Item item1 = (Item) items.get(0);
 		assertThat(item1.getTitle()).isEqualTo("title1");
 
 		Item item2 = (Item) items.get(1);
 		assertThat(item2.getTitle()).isEqualTo("title2");
-		verify(inputStream, never()).close();
 	}
 
 	@Test
@@ -109,7 +105,6 @@ public class RssChannelHttpMessageConverterTests {
 				"</channel></rss>";
 		assertThat(XmlContent.of(outputMessage.getBodyAsString(StandardCharsets.UTF_8)))
 				.isSimilarToIgnoringWhitespace(expected);
-		verify(outputMessage.getBody(), never()).close();
 	}
 
 	@Test
