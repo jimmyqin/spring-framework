@@ -341,7 +341,15 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 
 		// If the transaction attribute is null, the method is non-transactional.
 		TransactionAttributeSource tas = getTransactionAttributeSource();
+		// 拿到事务定义信息(隔离，传播，超时，只读),相当于是@Transactional注解中的属性
 		final TransactionAttribute txAttr = (tas != null ? tas.getTransactionAttribute(method, targetClass) : null);
+		/**
+		 *  <bean id="transactionManager"
+	 	*         class="org.springframework.orm.hibernate3.HibernateTransactionManager">
+	 	*         <property name="sessionFactory" ref="sessionFactory" />
+	 	*     </bean>
+		 *     拿到事务管理器(用来管理事务，包含事务的提交，回滚),TransactionManager用来提交和回滚事务的,并且持有事务具体运行状态
+		 */
 		final TransactionManager tm = determineTransactionManager(txAttr);
 
 		if (this.reactiveAdapterRegistry != null && tm instanceof ReactiveTransactionManager rtm) {
@@ -384,7 +392,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 			try {
 				// This is an around advice: Invoke the next interceptor in the chain.
 				// This will normally result in a target object being invoked.
-				// 钩子函数调用，这里就是上面其实调了return invocation.proceed();注意两个invocation不是同一个
+				// 钩子函数调用,注意这个钩子函数从哪里来的
 				retVal = invocation.proceedWithInvocation();
 			}
 			catch (Throwable ex) {
@@ -420,7 +428,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 					}
 				}
 			}
-
+			// 提交事务
 			commitTransactionAfterReturning(txInfo);
 			return retVal;
 		}
@@ -612,7 +620,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 		TransactionStatus status = null;
 		if (txAttr != null) {
 			if (tm != null) {
-				// 事务传播行为处理
+				// 里面看父类,关键代码
 				status = tm.getTransaction(txAttr);
 			}
 			else {
@@ -690,7 +698,8 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 				logger.trace("Completing transaction for [" + txInfo.getJoinpointIdentification() +
 						"] after exception: " + ex);
 			}
-			// 此处会在rollbackOn中判断该异常是否需要回滚
+			// 此处会在rollbackOn中判断该异常是否需要回滚,匹配回滚的异常判断 return (ex instanceof RuntimeException || ex instanceof Error);
+			//RuntimeException继承Exception
 			if (txInfo.transactionAttribute != null && txInfo.transactionAttribute.rollbackOn(ex)) {
 				try {
 					// 执行回滚
@@ -813,6 +822,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 		private void restoreThreadLocalStatus() {
 			// Use stack to restore old transaction TransactionInfo.
 			// Will be null if none was set.
+			// 可能有嵌套事务,需要把上一个旧的事务信息放回去
 			transactionInfoHolder.set(this.oldTransactionInfo);
 		}
 

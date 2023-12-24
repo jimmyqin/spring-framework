@@ -45,6 +45,7 @@ public class SpringTransactionAnnotationParser implements TransactionAnnotationP
 
 	@Override
 	public boolean isCandidateClass(Class<?> targetClass) {
+		//这里就是匹配注解的
 		return AnnotationUtils.isCandidateClass(targetClass, Transactional.class);
 	}
 

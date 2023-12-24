@@ -317,7 +317,7 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 	public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName) {
 		InjectionMetadata metadata = findResourceMetadata(beanName, bean.getClass(), pvs);
 		try {
-			metadata.inject(bean, beanName, pvs);
+			metadata.inject(bean, beanName, pvs); //@Resource注入
 		}
 		catch (Throwable ex) {
 			throw new BeanCreationException(beanName, "Injection of resource dependencies failed", ex);

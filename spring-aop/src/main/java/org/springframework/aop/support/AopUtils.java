@@ -258,7 +258,7 @@ public abstract class AopUtils {
 				// 只要有一个方法匹配到了就满足创建动态代理的条件
 				if (introductionAwareMethodMatcher != null ?
 						introductionAwareMethodMatcher.matches(method, targetClass, hasIntroductions) :
-						methodMatcher.matches(method, targetClass)) {
+						methodMatcher.matches(method, targetClass)) { // @Transactional在这里匹配了
 					return true;
 				}
 			}

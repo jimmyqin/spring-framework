@@ -264,7 +264,7 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 		Connection con = null;
 
 		try {
-			// ConnectionHolder为null才会创建，或者synchronizedWithTransaction 为true
+			// ConnectionHolder为null才会创建(为null说明是一个新事务)，或者synchronizedWithTransaction 为true
 			if (!txObject.hasConnectionHolder() ||
 					txObject.getConnectionHolder().isSynchronizedWithTransaction()) {
 				// 从自己配置的数据源中获取connection
@@ -295,7 +295,7 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 			}
 
 			prepareTransactionalConnection(con, definition);
-			txObject.getConnectionHolder().setTransactionActive(true);
+			txObject.getConnectionHolder().setTransactionActive(true); // 事务已激活状态
 
 			int timeout = determineTimeout(definition);
 			if (timeout != TransactionDefinition.TIMEOUT_DEFAULT) {
@@ -304,7 +304,8 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 
 			// Bind the connection holder to the thread.
 			if (txObject.isNewConnectionHolder()) {
-				// 保存，这里证明Datasource可以配置多个， 一个线程只会放一个ConnectionHolder进去
+				// ThreadLocal保存，这里证明Datasource可以配置多个， 一个线程只会放一个ConnectionHolder进去
+				// Datasource 和 ConnectionHolder绑定
 				TransactionSynchronizationManager.bindResource(obtainDataSource(), txObject.getConnectionHolder());
 			}
 		}

@@ -490,7 +490,7 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 	public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName) {
 		InjectionMetadata metadata = findAutowiringMetadata(beanName, bean.getClass(), pvs);
 		try {
-			metadata.inject(bean, beanName, pvs);
+			metadata.inject(bean, beanName, pvs); //注入@Autowire注解和@Value注解的属性
 		}
 		catch (BeanCreationException ex) {
 			throw ex;

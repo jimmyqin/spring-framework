@@ -46,7 +46,7 @@ public class TransactionManagementConfigurationSelector extends AdviceModeImport
 	@Override
 	protected String[] selectImports(AdviceMode adviceMode) {
 		return switch (adviceMode) {
-			// 注册处理事务的后置处理器， 并配置spring事务自己实现的advisor切面
+			// 1.注册处理事务的后置处理器， 2.并配置spring事务自己实现的advisor切面
 			case PROXY -> new String[] {AutoProxyRegistrar.class.getName(),
 					ProxyTransactionManagementConfiguration.class.getName()};
 			case ASPECTJ -> new String[] {determineTransactionAspectClass()};

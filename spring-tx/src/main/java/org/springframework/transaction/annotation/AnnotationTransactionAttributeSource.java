@@ -140,7 +140,7 @@ public class AnnotationTransactionAttributeSource extends AbstractFallbackTransa
 	@Override
 	public boolean isCandidateClass(Class<?> targetClass) {
 		for (TransactionAnnotationParser parser : this.annotationParsers) {
-			if (parser.isCandidateClass(targetClass)) {
+			if (parser.isCandidateClass(targetClass)) { //匹配注解@Transactional
 				return true;
 			}
 		}

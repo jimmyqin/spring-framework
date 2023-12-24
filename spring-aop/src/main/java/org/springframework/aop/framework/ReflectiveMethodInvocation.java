@@ -162,9 +162,9 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 		// 递归结束条件
 		if (this.currentInterceptorIndex == this.interceptorsAndDynamicMethodMatchers.size() - 1) {
 			// 具体业务代码执行点
-			return invokeJoinpoint();
+			return invokeJoinpoint();//里面是反射执行方法
 		}
-		// 拿到下一个
+		// interceptorsAndDynamicMethodMatchers就是外面的链条chain,拿到下一个,从0开始
 		Object interceptorOrInterceptionAdvice =
 				this.interceptorsAndDynamicMethodMatchers.get(++this.currentInterceptorIndex);
 		// 这里一般不走
@@ -185,6 +185,7 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 			// It's an interceptor, so we just invoke it: The pointcut will have
 			// been evaluated statically before this object was constructed.
 			// 递归去调用（责任链），配置有一个注入的TransactionInterceptor，把this传进拦截器里面去，这里的this其实就是包含有调用的目标方法
+			//这里调用的是TransactionInterceptor的invoke
 			return ((MethodInterceptor) interceptorOrInterceptionAdvice).invoke(this);
 		}
 	}

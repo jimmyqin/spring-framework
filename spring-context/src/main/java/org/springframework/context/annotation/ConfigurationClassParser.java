@@ -271,6 +271,7 @@ class ConfigurationClassParser {
 
 		if (configClass.getMetadata().isAnnotated(Component.class.getName())) {
 			// Recursively process any member (nested) classes first
+			// 配置类的嵌套类处理
 			processMemberClasses(configClass, sourceClass, filter);
 		}
 
@@ -286,7 +287,7 @@ class ConfigurationClassParser {
 						"]. Reason: Environment must implement ConfigurableEnvironment");
 			}
 		}
-
+		// 处理@ComponentScan注解,把扫描到的符合的类注册为bean定义
 		// Process any @ComponentScan annotations
 		Set<AnnotationAttributes> componentScans = AnnotationConfigUtils.attributesForRepeatable(
 				sourceClass.getMetadata(), ComponentScan.class, ComponentScans.class);
@@ -298,7 +299,7 @@ class ConfigurationClassParser {
 				Set<BeanDefinitionHolder> scannedBeanDefinitions =
 						this.componentScanParser.parse(componentScan, sourceClass.getMetadata().getClassName());
 				// Check the set of scanned definitions for any further config classes and parse recursively if needed
-				// 处理包扫描出来的bean定义
+				// 处理包扫描出来的bean定义,在上面的parse中,已经把这里拿到的bean定义注册到bean定义的map中了
 				for (BeanDefinitionHolder holder : scannedBeanDefinitions) {
 					BeanDefinition bdCand = holder.getBeanDefinition().getOriginatingBeanDefinition();
 					if (bdCand == null) {
@@ -515,7 +516,7 @@ class ConfigurationClassParser {
 							processImports(configClass, currentSourceClass, importSourceClasses, exclusionFilter, false);
 						}
 					}
-					// 判断导入的类是不是ImportBeanDefinitionRegistrar的子类
+					// 判断导入的类是不是ImportBeanDefinitionRegistrar的子类,先把它暂存起来,后续统一处理
 					else if (candidate.isAssignable(ImportBeanDefinitionRegistrar.class)) {
 						// Candidate class is an ImportBeanDefinitionRegistrar ->
 						// delegate to it to register additional bean definitions

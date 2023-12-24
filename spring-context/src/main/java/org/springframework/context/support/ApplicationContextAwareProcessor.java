@@ -84,7 +84,7 @@ class ApplicationContextAwareProcessor implements BeanPostProcessor {
 			return bean;
 		}
 
-		//Aware感知属性注入
+			//Aware感知属性注入
 		invokeAwareInterfaces(bean);
 		return bean;
 	}

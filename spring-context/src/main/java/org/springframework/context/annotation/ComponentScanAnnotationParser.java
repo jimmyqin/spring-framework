@@ -66,7 +66,7 @@ class ComponentScanAnnotationParser {
 
 
 	public Set<BeanDefinitionHolder> parse(AnnotationAttributes componentScan, String declaringClass) {
-		// 真正根据配置类扫描bean的扫描器
+		// 真正根据配置类扫描bean的扫描器,根据配置类中的配置信息,配置scanner扫描器
 		ClassPathBeanDefinitionScanner scanner = new ClassPathBeanDefinitionScanner(this.registry,
 				componentScan.getBoolean("useDefaultFilters"), this.environment, this.resourceLoader);
 
@@ -105,7 +105,7 @@ class ComponentScanAnnotationParser {
 		if (lazyInit) {
 			scanner.getBeanDefinitionDefaults().setLazyInit(true);
 		}
-
+		// 拿到包路径,准备扫描
 		Set<String> basePackages = new LinkedHashSet<>();
 		String[] basePackagesArray = componentScan.getStringArray("basePackages");
 		for (String pkg : basePackagesArray) {
@@ -119,7 +119,7 @@ class ComponentScanAnnotationParser {
 		if (basePackages.isEmpty()) {
 			basePackages.add(ClassUtils.getPackageName(declaringClass));
 		}
-
+		// 相当于排除自己(配置类)
 		scanner.addExcludeFilter(new AbstractTypeHierarchyTraversingFilter(false, false) {
 			@Override
 			protected boolean matchClassName(String className) {

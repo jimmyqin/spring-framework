@@ -24,4 +24,8 @@ public class LogAop {
 	public void registerAfter(){
 		System.out.println("register after");
 	}
+
+	public void test() {
+
+	}
 }

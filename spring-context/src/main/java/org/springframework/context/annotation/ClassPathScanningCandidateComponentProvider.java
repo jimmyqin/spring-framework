@@ -334,7 +334,7 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 		if (this.componentsIndex != null && indexSupportsIncludeFilters()) {
 			return addCandidateComponentsFromIndex(this.componentsIndex, basePackage);
 		}
-		// 走这里
+		// 走这里,拿到所有符合条件的bean定义
 		else {
 			return scanCandidateComponents(basePackage);
 		}
@@ -442,9 +442,10 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 		try {
 			String packageSearchPath = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX +
 					resolveBasePackage(basePackage) + '/' + this.resourcePattern;
-			Resource[] resources = getResourcePatternResolver().getResources(packageSearchPath);
+			Resource[] resources = getResourcePatternResolver().getResources(packageSearchPath); // 把路径下所有的class转换为资源文件
 			boolean traceEnabled = logger.isTraceEnabled();
 			boolean debugEnabled = logger.isDebugEnabled();
+			// 单独处理每一个资源文件class,主要是筛选那些符合条件的
 			for (Resource resource : resources) {
 				String filename = resource.getFilename();
 				if (filename != null && filename.contains(ClassUtils.CGLIB_CLASS_SEPARATOR)) {
@@ -456,11 +457,11 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 				}
 				try {
 					MetadataReader metadataReader = getMetadataReaderFactory().getMetadataReader(resource);
-					// 条件判断，过滤包含处理
+					// 条件判断，过滤包含或者排除等处理(是否包含@Component就是在里面判断的)
 					if (isCandidateComponent(metadataReader)) {
 						ScannedGenericBeanDefinition sbd = new ScannedGenericBeanDefinition(metadataReader);
 						sbd.setSource(resource);
-						// 在此处会过滤掉扫描到标记有@Component的接口
+						// 会判断是否一个接口等其他条件,接口是不能作为bean的,具体看里面判断
 						if (isCandidateComponent(sbd)) {
 							if (debugEnabled) {
 								logger.debug("Identified candidate component class: " + resource);
@@ -522,7 +523,7 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 				return false;
 			}
 		}
-		// 包含
+		// 包含@Component注解判断,具体是AnnotationTypeFilter实现类中
 		for (TypeFilter tf : this.includeFilters) {
 			if (tf.match(metadataReader, getMetadataReaderFactory())) {
 				return isConditionMatch(metadataReader);

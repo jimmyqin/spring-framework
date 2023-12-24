@@ -116,11 +116,13 @@ public class TransactionInterceptor extends TransactionAspectSupport implements 
 		Class<?> targetClass = (invocation.getThis() != null ? AopUtils.getTargetClass(invocation.getThis()) : null);
 
 		// Adapt to TransactionAspectSupport's invokeWithinTransaction...
+		// 先进去看invokeWithinTransaction,注意参数有个函数方法
 		return invokeWithinTransaction(invocation.getMethod(), targetClass, new CoroutinesInvocationCallback() {
 			@Override
 			@Nullable
 			public Object proceedWithInvocation() throws Throwable {
-				// 递归调用
+				// 上面invoke方法参数MethodInvocation是一个this传进来的,这个this就是ReflectiveMethodInvocation
+				// 本来就是调用ReflectiveMethodInvocation的invoke方法进来这里的,这里调用invocation.proceed()相当于又回去调用ReflectiveMethodInvocation的invoke方法,又会返回去递归调用
 				return invocation.proceed();
 			}
 			@Override

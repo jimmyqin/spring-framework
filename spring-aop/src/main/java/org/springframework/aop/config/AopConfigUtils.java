@@ -126,6 +126,10 @@ public abstract class AopConfigUtils {
 				int currentPriority = findPriorityForClass(apcDefinition.getBeanClassName());
 				int requiredPriority = findPriorityForClass(cls);
 				// 优先级大的覆盖小的
+				// 注册创建事务代理的后置处理器InfrastructureAdvisorAutoProxyCreator
+				// 开启aop同时AnnotationAwareAspectJAutoProxyCreator会把InfrastructureAdvisorAutoProxyCreator覆盖
+				// AnnotationAwareAspectJAutoProxyCreator优先级更高,
+				// 两者基本相同,都有共同的父类,都可以用来解析advisor和创建动态代理,InfrastructureAdvisorAutoProxyCreator覆写了方法isEligibleAdvisorBean而已
 				if (currentPriority < requiredPriority) {
 					apcDefinition.setBeanClassName(cls.getName());
 				}

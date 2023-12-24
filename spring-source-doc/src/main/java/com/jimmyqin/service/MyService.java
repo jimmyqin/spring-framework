@@ -1,5 +1,6 @@
 package com.jimmyqin.service;
 
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.stereotype.Component;
 
 /**
@@ -9,8 +10,9 @@ import org.springframework.stereotype.Component;
  * @date 2022/8/22 16:47
  */
 @Component
-public class MyService implements IMyService{
+public class MyService implements IMyService, DisposableBean {
 	private String name;
+
 
 	@Override
 	public void helloService() {
@@ -24,5 +26,10 @@ public class MyService implements IMyService{
 	public MyService setName(String name) {
 		this.name = name;
 		return this;
+	}
+
+	@Override
+	public void destroy() throws Exception {
+		System.out.printf("destroy~~~~~~~");
 	}
 }

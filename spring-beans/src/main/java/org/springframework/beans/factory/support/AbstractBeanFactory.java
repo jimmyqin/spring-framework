@@ -241,7 +241,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			String name, @Nullable Class<T> requiredType, @Nullable Object[] args, boolean typeCheckOnly)
 			throws BeansException {
 
-		String beanName = transformedBeanName(name);
+		String beanName = transformedBeanName(name); //传进来有可能别名,获取真实名字
 		Object beanInstance;
 
 		// Eagerly check singleton cache for manually registered singletons.
@@ -271,6 +271,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 			// Check if bean definition exists in this factory.
 			// 存在父容器，当前容器中又没有bean的定义，去父容器中拿
+			// springMvc才有父子容器,这里是没有的,Spring 是父容器, Spring MVC是子容器,子可以拿父,父不可以拿子
 			BeanFactory parentBeanFactory = getParentBeanFactory();
 			if (parentBeanFactory != null && !containsBeanDefinition(beanName)) {
 				// Not found -> check parent.
@@ -301,9 +302,10 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				if (requiredType != null) {
 					beanCreation.tag("beanType", requiredType::toString);
 				}
+				// 拿到BeanDefinition定义信息
 				RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);
 				checkMergedBeanDefinition(mbd, beanName, args);
-
+				// 是否有DependsOn依赖,有就先生成依赖的bean
 				// Guarantee initialization of beans that the current bean depends on.
 				String[] dependsOn = mbd.getDependsOn();
 				if (dependsOn != null) {

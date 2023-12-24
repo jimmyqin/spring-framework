@@ -13,6 +13,8 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
     implementation(project(":spring-context"))
+    implementation(project(":spring-jdbc"))
+    implementation(project(":spring-tx"))
     implementation 'org.aspectj:aspectjweaver:1.9.9.1'
 
 }

@@ -5,7 +5,6 @@ import com.jimmyqin.common.TestFactoryBean;
 import com.jimmyqin.common.TestFactoryBeanCopy;
 import com.jimmyqin.config.MyConfig;
 import com.jimmyqin.service.IMyService;
-import com.jimmyqin.service.MyService;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 /**
@@ -25,5 +24,6 @@ public class Main {
 		myService.helloService();
 		System.out.println(m);
 		System.out.println(factoryBeanCopy);
+		context.close();
 	}
 }

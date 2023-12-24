@@ -288,10 +288,13 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		Object cacheKey = getCacheKey(beanClass, beanName);
 
 		if (!StringUtils.hasLength(beanName) || !this.targetSourcedBeans.contains(beanName)) {
+			// 解析过了就不需要在解析了
 			if (this.advisedBeans.containsKey(cacheKey)) {
 				return null;
 			}
+			// shouldSkip里面执行的aop的advisor解析
 			if (isInfrastructureClass(beanClass) || shouldSkip(beanClass, beanName)) {
+				// 不需要生成动态代理标记
 				this.advisedBeans.put(cacheKey, Boolean.FALSE);
 				return null;
 			}
@@ -301,6 +304,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		// Suppresses unnecessary default instantiation of the target bean:
 		// The TargetSource will handle target instances in a custom fashion.
 		TargetSource targetSource = getCustomTargetSource(beanClass, beanName);
+		// 一般不会进去这里
 		if (targetSource != null) {
 			if (StringUtils.hasLength(beanName)) {
 				this.targetSourcedBeans.add(beanName);

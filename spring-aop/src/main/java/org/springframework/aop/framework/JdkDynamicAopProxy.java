@@ -239,7 +239,7 @@ final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializa
 				// Note that the final invoker must be an InvokerInterceptor so we know it does
 				// nothing but a reflective operation on the target, and no hot swapping or fancy proxying.
 				Object[] argsToUse = AopProxyUtils.adaptArgumentsIfNecessary(method, args);
-				retVal = AopUtils.invokeJoinpointUsingReflection(target, method, argsToUse);
+				retVal = AopUtils.invokeJoinpointUsingReflection(target, method, argsToUse); // 没有调用链,直接反射执行方法
 			}
 			else {
 				// We need to create a method invocation...

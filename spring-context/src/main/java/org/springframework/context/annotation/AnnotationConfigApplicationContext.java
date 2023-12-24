@@ -54,19 +54,24 @@ import org.springframework.util.Assert;
  * @see org.springframework.context.support.GenericXmlApplicationContext
  */
 public class AnnotationConfigApplicationContext extends GenericApplicationContext implements AnnotationConfigRegistry {
-
+	// 读取注解声明的bean的配置
 	private final AnnotatedBeanDefinitionReader reader;
-
+	// 读取xml声明的bean的定义信息,一般提供给用户用的，并不是他内部使用，内部后面他会再创建一个来用
 	private final ClassPathBeanDefinitionScanner scanner;
 
 
 	/**
+	 * spring上下文是持有beanFactory的引用,是组合关系,不仅仅是继承关系
+	 * BeanFactory与ApplicationContext并不仅仅只是继承关系,
+	 * BeanFactory是ApplicationContext的一个成员变量, 二者为组合关系。并在原有基础上进行了增强功能,
+	 * 因为AnnotationConfigApplicationContext继承了AbstractApplicationContext并且实现了BeanDefinitionRegistry接口那么在实例化AnnotationConfigApplicationContext时会调用继承的AbstractApplicationContext的构造方法
 	 * Create a new AnnotationConfigApplicationContext that needs to be populated
 	 * through {@link #register} calls and then manually {@linkplain #refresh refreshed}.
 	 */
 	public AnnotationConfigApplicationContext() {
 		StartupStep createAnnotatedBeanDefReader = getApplicationStartup().start("spring.context.annotated-bean-reader.create");
-		this.reader = new AnnotatedBeanDefinitionReader(this);
+		// 这里传进去的this就是spring上下文了,上下文其实也是一个bean定义注册
+		this.reader = new AnnotatedBeanDefinitionReader(this); // 后续会使用到
 		createAnnotatedBeanDefReader.end();
 		this.scanner = new ClassPathBeanDefinitionScanner(this);
 	}
@@ -89,8 +94,9 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 */
 	public AnnotationConfigApplicationContext(Class<?>... componentClasses) {
 		// 注册一些后置处理器到bean定义中
+		// 创建reader
 		this();
-		// 注册传进来的componentClasses配置类为bean定义
+		// 使用reader注册传进来的componentClasses配置类为bean定义
 		register(componentClasses);
 		refresh();
 	}
@@ -167,7 +173,7 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 		Assert.notEmpty(componentClasses, "At least one component class must be specified");
 		StartupStep registerComponentClass = getApplicationStartup().start("spring.context.component-classes.register")
 				.tag("classes", () -> Arrays.toString(componentClasses));
-		this.reader.register(componentClasses);
+		this.reader.register(componentClasses); // 注册配置类为bean定义
 		registerComponentClass.end();
 	}
 

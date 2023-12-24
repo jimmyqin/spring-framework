@@ -184,11 +184,25 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	@Nullable
 	protected Object getSingleton(String beanName, boolean allowEarlyReference) {
 		// Quick check for existing instance without full singleton lock
+		// 先从一级缓存拿
 		Object singletonObject = this.singletonObjects.get(beanName);
+		// 在一级缓存拿不到的情况下,并且在singletonsCurrentlyInCreation已经标记了该bean正在创建中,这种情况
+		// 就说明是出现了循环依赖, 如A<--->B循环依赖,假设A先创建,在A注入B的时候,发现B还没有创建,会去创建B,这时候B又需要注入A,因为之前A已经在创建中,
+		// 所以singletonsCurrentlyInCreation的中会标记有A正在创建中,这就说明了,只要singletonsCurrentlyInCreation有标记,并走到这里,说明产生了循环依赖(单线程情况)
 		if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) {
+			// 再去二级缓存中,拿一下,为什么要去二级缓存中先拿一下呢?在下面会解答
 			singletonObject = this.earlySingletonObjects.get(beanName);
+			// 二级没有
 			if (singletonObject == null && allowEarlyReference) {
+				//这里加锁锁住,防止并发,在Y--->X, Z--->X,情况下,假设有多线程同时分别触发Y,Z创建,Y在创建过程中,需执行X的注入,Z在创建过程中也需要注入X,
+				// 这时候,假设两个线程同时执行都需要注入X,但是Y在注入X的时候先快一步拿到了锁,Z在注入X的时候会被阻塞住
+				// 注意:不一定会有并发问题,因为创建bean都是默认单线程的,这里只是分析一下多线程情况
 				synchronized (this.singletonObjects) {
+					// 假设Y注入X已经执行完这里的加锁的代码,就释放锁了,这时Z就会进来,Z进来,在一级缓存中有可能可以拿到X,也有可能拿不到,看两个线程哪个执行得比较快,
+					// 如果是Y创建的线程执行得比较快,并且把X创建完成放到了一级缓存中,所以可以在一级缓存拿到(因为Y依赖X,所以会在注入X的时候顺便创建X)
+					// 如果是Z创建的线程执行得比较快,有可能Y还没有执行完成,并且还没来得及把X放进一级缓存(放进一级缓存的地方也会加锁的,所以不会有同时执行的情况),所以一级缓存中拿不到,但是在二级缓存中可以拿到,因为前面Y线程执行加锁的模块的时候已经把X放进二级缓存中,
+					// 提醒: 加锁这块逻辑单独理解,不要跟循环依赖一起混在理解
+
 					// Consistent creation of early reference within full singleton lock
 					singletonObject = this.singletonObjects.get(beanName);
 					if (singletonObject == null) {

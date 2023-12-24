@@ -402,7 +402,7 @@ public abstract class AbstractPlatformTransactionManager
 		else if (def.getPropagationBehavior() == TransactionDefinition.PROPAGATION_REQUIRED ||
 				def.getPropagationBehavior() == TransactionDefinition.PROPAGATION_REQUIRES_NEW ||
 				def.getPropagationBehavior() == TransactionDefinition.PROPAGATION_NESTED) {
-			SuspendedResourcesHolder suspendedResources = suspend(null);
+			SuspendedResourcesHolder suspendedResources = suspend(null); // 挂起事务,第一次进来不会挂起,具体看里面逻辑
 			if (debugEnabled) {
 				logger.debug("Creating new transaction with name [" + def.getName() + "]: " + def);
 			}
@@ -531,10 +531,11 @@ public abstract class AbstractPlatformTransactionManager
 	 */
 	private TransactionStatus startTransaction(TransactionDefinition definition, Object transaction,
 			boolean nested, boolean debugEnabled, @Nullable SuspendedResourcesHolder suspendedResources) {
-
+		// 意思是可以进行同步
 		boolean newSynchronization = (getTransactionSynchronization() != SYNCHRONIZATION_NEVER);
+		// 事务状态
 		DefaultTransactionStatus status = newTransactionStatus(
-				definition, transaction, true, newSynchronization, nested, debugEnabled, suspendedResources);
+				definition, transaction, true/* 是否是一个新事物*/, newSynchronization, nested, debugEnabled, suspendedResources/*挂起事务的信息*/);
 		this.transactionExecutionListeners.forEach(listener -> listener.beforeBegin(status));
 		try {
 			doBegin(transaction, definition);
@@ -543,8 +544,8 @@ public abstract class AbstractPlatformTransactionManager
 			this.transactionExecutionListeners.forEach(listener -> listener.afterBegin(status, ex));
 			throw ex;
 		}
-		prepareSynchronization(status, definition);
-		this.transactionExecutionListeners.forEach(listener -> listener.afterBegin(status, null));
+		prepareSynchronization(status, definition);// 设置同步事务管理器数据
+		this.transactionExecutionListeners.forEach(listener -> listener.afterBegin(status, null));//执行监听器
 		return status;
 	}
 
@@ -582,6 +583,7 @@ public abstract class AbstractPlatformTransactionManager
 	 */
 	private void prepareSynchronization(DefaultTransactionStatus status, TransactionDefinition definition) {
 		if (status.isNewSynchronization()) {
+			// 设置当前ThreadLocal同步事务管理器数据
 			TransactionSynchronizationManager.setActualTransactionActive(status.hasTransaction());
 			TransactionSynchronizationManager.setCurrentTransactionIsolationLevel(
 					definition.getIsolationLevel() != TransactionDefinition.ISOLATION_DEFAULT ?
@@ -1087,7 +1089,7 @@ public abstract class AbstractPlatformTransactionManager
 				logger.debug("Resuming suspended transaction after completion of inner transaction");
 			}
 			Object transaction = (status.hasTransaction() ? status.getTransaction() : null);
-			resume(transaction, (SuspendedResourcesHolder) status.getSuspendedResources());
+			resume(transaction, (SuspendedResourcesHolder) status.getSuspendedResources()); //恢复上层事务
 		}
 	}
 

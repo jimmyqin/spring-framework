@@ -46,7 +46,7 @@ public class BeanFactoryAspectJAdvisorsBuilder {
 
 	@Nullable
 	private volatile List<String> aspectBeanNames;
-
+	// 解析好的advisor
 	private final Map<String, List<Advisor>> advisorsCache = new ConcurrentHashMap<>();
 
 	private final Map<String, MetadataAwareAspectInstanceFactory> aspectFactoryCache = new ConcurrentHashMap<>();
@@ -82,15 +82,17 @@ public class BeanFactoryAspectJAdvisorsBuilder {
 	 */
 	public List<Advisor> buildAspectJAdvisors() {
 		List<String> aspectNames = this.aspectBeanNames;
-
+		// 解析过了aspectNames就不会为空,不会再解析了
 		if (aspectNames == null) {
 			synchronized (this) {
 				aspectNames = this.aspectBeanNames;
 				if (aspectNames == null) {
 					List<Advisor> advisors = new ArrayList<>();
 					aspectNames = new ArrayList<>();
+					// 拿到所有的bean,循环筛选出是切面(Aspect)的bean
 					String[] beanNames = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(
 							this.beanFactory, Object.class, true, false);
+					// 遍历所有bean
 					for (String beanName : beanNames) {
 						if (!isEligibleBean(beanName)) {
 							continue;
@@ -101,13 +103,14 @@ public class BeanFactoryAspectJAdvisorsBuilder {
 						if (beanType == null) {
 							continue;
 						}
+						// 判断是不是切面(Aspect)类
 						if (this.advisorFactory.isAspect(beanType)) {
-							aspectNames.add(beanName);
+							aspectNames.add(beanName); // 存放是切面类的bean名称
 							AspectMetadata amd = new AspectMetadata(beanType, beanName);
 							if (amd.getAjType().getPerClause().getKind() == PerClauseKind.SINGLETON) {
 								MetadataAwareAspectInstanceFactory factory =
 										new BeanFactoryAspectInstanceFactory(this.beanFactory, beanName);
-								// 取得advisor
+								// 取得advisor,advisor是由advice(通知)和pointCut(切点)组成,封装在advisor中
 								List<Advisor> classAdvisors = this.advisorFactory.getAdvisors(factory);
 								// 放到缓存中
 								if (this.beanFactory.isSingleton(beanName)) {
@@ -140,6 +143,7 @@ public class BeanFactoryAspectJAdvisorsBuilder {
 		if (aspectNames.isEmpty()) {
 			return Collections.emptyList();
 		}
+		// 前面解析过了,再进来就是直接走这里,拿出来解析过的直接返回即可
 		List<Advisor> advisors = new ArrayList<>();
 		for (String aspectName : aspectNames) {
 			List<Advisor> cachedAdvisors = this.advisorsCache.get(aspectName);

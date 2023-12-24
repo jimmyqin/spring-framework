@@ -519,7 +519,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		try {
 			// Give BeanPostProcessors a chance to return a proxy instead of the target bean instance.
-			// 执行
+			// 实例化前,执行后置处理器
 			Object bean = resolveBeforeInstantiation(beanName, mbdToUse);
 			if (bean != null) {
 				return bean;
@@ -603,16 +603,16 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		boolean earlySingletonExposure = (mbd.isSingleton() && this.allowCircularReferences &&
 				isSingletonCurrentlyInCreation(beanName));
 		// 早期对象标记 earlySingletonExposure
-		// 满足上述条件才有必要放到三级缓存，为什么呢。为了解决循环依赖和动态代理的问题。
+		// 如果allowCircularReferences为false,说明不允许循环依赖,不需要放进去三级缓存,后续会抛出错误
+		// 如果是allowCircularReferences是true,并且singletonsCurrentlyInCreation标记已经创建中,后续如果有循环依赖,会用到这个标记(用到了就说明有循环依赖了),没有循环依赖不会用到,创建完成就会移除掉
 		if (earlySingletonExposure) {
 			if (logger.isTraceEnabled()) {
 				logger.trace("Eagerly caching bean '" + beanName +
 						"' to allow for resolving potential circular references");
 			}
 			// 无论是否有循环依赖，都先把创建bean的函数放到三级缓存，当A和B有循环依赖的时候， 在B去获取A时，会在一级二级三级缓存中一级一级的找下去，当找到三级缓存的时候
-			// 就是调用此处放进去的函数方法拿到A或者A的动态代理（如果A需要创建动态代理对象）
-			// 如果没有出现循环依赖依赖这个bean，那么这个工厂不会起到作用，按照正常生命周期执行，执行完后直接把本bean放入一级缓存中。
-			// 如果出现了循环依赖依赖了这个bean，没有aop的情况下直接返回原始对象，有aop的情况下返回代理对象。
+			// 就是调用此处放进去的函数方法拿到A或者A的动态代理（如果A需要创建动态代理对象,没有aop的情况下直接返回原始对象，有aop的情况下返回代理对象）
+			// 如果没有出现循环依赖依赖这个bean，那么这个工厂不会起到作用，按照正常生命周期执行，执行完后直接把本bean放入一级缓存中,三级缓存直接会移除掉,不会执行到里面的函数接口方法。
 			addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));
 		}
 
@@ -1135,12 +1135,12 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
 				Class<?> targetType = determineTargetType(beanName, mbd);
 				if (targetType != null) {
-					// 有aop的是在这里生成的，通过bean后置处理器的实例化前方法postProcessBeforeInstantiation()去创建bean
-					// 一些框架就是通过这里根据自己的需求来生成自己想要的bean实例的
-					// 在此处会解析aop的注解为advisor，为后面生成aop代理作准备
-					bean = applyBeanPostProcessorsBeforeInstantiation(targetType, beanName);
+					// 1. 可以通过bean后置处理器的实例化前方法postProcessBeforeInstantiation()去创建bean
+					// 2. 一些框架就是通过这里根据自己的需求来生成自己想要的bean实例的
+					// 3. 在此处会解析aop的注解为advisor，为后面生成aop代理作准备
+					bean = applyBeanPostProcessorsBeforeInstantiation(targetType, beanName); // 实例化前的后置处理器调用
 					if (bean != null) {
-						// 执行上面实例化得到的bean的实例化后处理
+						// 执行上面实例化得到的bean的实例化后处理,执行初始化后的后置处理器
 						bean = applyBeanPostProcessorsAfterInitialization(bean, beanName);
 					}
 				}
@@ -1164,7 +1164,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	@Nullable
 	protected Object applyBeanPostProcessorsBeforeInstantiation(Class<?> beanClass, String beanName) {
 		for (InstantiationAwareBeanPostProcessor bp : getBeanPostProcessorCache().instantiationAware) {
-			Object result = bp.postProcessBeforeInstantiation(beanClass, beanName);
+			Object result = bp.postProcessBeforeInstantiation(beanClass, beanName); // 后置处理器调用
 			if (result != null) {
 				return result;
 			}
@@ -1427,7 +1427,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// to support styles of field injection.
 		if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
 			for (InstantiationAwareBeanPostProcessor bp : getBeanPostProcessorCache().instantiationAware) {
-				if (!bp.postProcessAfterInstantiation(bw.getWrappedInstance(), beanName)) {
+				if (!bp.postProcessAfterInstantiation(bw.getWrappedInstance(), beanName)) { // 实例化后调用的后置处理器
 					return;
 				}
 			}
@@ -1802,7 +1802,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 */
 	@SuppressWarnings("deprecation")
 	protected Object initializeBean(String beanName, Object bean, @Nullable RootBeanDefinition mbd) {
-		// 走这里，一些Aware接口调用
+		// 走这里，一部分Aware接口调用
 		invokeAwareMethods(beanName, bean);
 
 		Object wrappedBean = bean;

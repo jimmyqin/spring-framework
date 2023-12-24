@@ -274,7 +274,7 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 		Assert.notEmpty(basePackages, "At least one base package must be specified");
 		Set<BeanDefinitionHolder> beanDefinitions = new LinkedHashSet<>();
 		for (String basePackage : basePackages) {
-			// 扫描到是bean的类，把他转换为bean定义
+			// 找到符合条件的bean类,并拿到bean定义
 			Set<BeanDefinition> candidates = findCandidateComponents(basePackage);
 			for (BeanDefinition candidate : candidates) {
 				ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(candidate);
@@ -293,6 +293,7 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 					beanDefinitions.add(definitionHolder);
 					// 把扫描到的bean放到bean定义集合中（其实这个bean定义集合就是DefaultListableBeanFactory，即是AnnotationConfigApplicationContext上下文中的成员属性）
 					// 上下文在创建的时候就通过父级构造函数创建了DefaultListableBeanFactory
+					// 把bean定义注册到map中
 					registerBeanDefinition(definitionHolder, this.registry);
 				}
 			}

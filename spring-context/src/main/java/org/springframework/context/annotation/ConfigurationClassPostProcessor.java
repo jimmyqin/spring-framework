@@ -108,6 +108,7 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
 
 /**
+ * 非常重要的一个类,会解析@Configuration配置类,解析@ComponentScan和@Import
  * {@link BeanFactoryPostProcessor} used for bootstrapping processing of
  * {@link Configuration @Configuration} classes.
  *
@@ -307,7 +308,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 			processConfigBeanDefinitions((BeanDefinitionRegistry) beanFactory);
 		}
 
-		enhanceConfigurationClasses(beanFactory);
+		enhanceConfigurationClasses(beanFactory); // 会对@Configuration的类bean定义做一个动态代理的处理,后续生成动态代理
 		beanFactory.addBeanPostProcessor(new ImportAwareBeanPostProcessor(beanFactory));
 	}
 
@@ -405,7 +406,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		if (this.environment == null) {
 			this.environment = new StandardEnvironment();
 		}
-
+		// 配置类解析器,循环解析每一个@Configuration配置类
 		// Parse each @Configuration class
 		ConfigurationClassParser parser = new ConfigurationClassParser(
 				this.metadataReaderFactory, this.problemReporter, this.environment,
@@ -429,7 +430,8 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 						this.importBeanNameGenerator, parser.getImportRegistry());
 			}
 			// 拿到@Configuration的配置类， 此时才会把配置类中的@bean和@Import，@ImportResource注册成bean定义map中
-			// 为什么要此时才注册到bean定义map中呢？思考：优先级问题？当有多个时，会把前面注册的覆盖掉？
+			// 为什么要此时才注册到bean定义map中呢？
+			// 思考：优先级问题？当有多个时，会把前面注册的覆盖掉？
 			this.reader.loadBeanDefinitions(configClasses);
 			alreadyParsed.addAll(configClasses);
 			processConfig.tag("classCount", () -> String.valueOf(configClasses.size())).end();
@@ -535,7 +537,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 			beanDef.setAttribute(AutoProxyUtils.PRESERVE_TARGET_CLASS_ATTRIBUTE, Boolean.TRUE);
 			// Set enhanced subclass of the user-specified bean class
 			Class<?> configClass = beanDef.getBeanClass();
-			Class<?> enhancedClass = enhancer.enhance(configClass, this.beanClassLoader);
+			Class<?> enhancedClass = enhancer.enhance(configClass, this.beanClassLoader); //cglib动态代理处理
 			if (configClass != enhancedClass) {
 				if (logger.isTraceEnabled()) {
 					logger.trace(String.format("Replacing bean definition '%s' existing class '%s' with " +
