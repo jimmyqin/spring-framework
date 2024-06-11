@@ -323,6 +323,7 @@ public class DispatcherServlet extends FrameworkServlet {
 	@Nullable
 	private ThemeResolver themeResolver;
 
+	// 控制器集合
 	/** List of HandlerMappings used by this servlet. */
 	@Nullable
 	private List<HandlerMapping> handlerMappings;
@@ -507,7 +508,7 @@ public class DispatcherServlet extends FrameworkServlet {
 	 * <p>May be overridden in subclasses in order to initialize further strategy objects.
 	 */
 	protected void initStrategies(ApplicationContext context) {
-		//initStrategies 最终是servlet的init（）去调用的
+		//上下文刷新事件的监听器ContextRefreshListener触发该初始化方法
 		initMultipartResolver(context);
 		initLocaleResolver(context);
 		initThemeResolver(context);
@@ -1112,7 +1113,7 @@ public class DispatcherServlet extends FrameworkServlet {
 				// making them available for @ExceptionHandler methods and other scenarios.
 				dispatchException = new ServletException("Handler dispatch failed: " + err, err);
 			}
-			// 结果处理（里面执行afterCompletion， 平时写的拦截器执行完成处理）
+			// 结果处理,里面有执行afterCompletion,平时写的拦截器执行完成处理;全局异常处理;视图解析、渲染
 			processDispatchResult(processedRequest, response, mappedHandler, mv, dispatchException);
 		}
 		catch (Exception ex) {
@@ -1161,7 +1162,7 @@ public class DispatcherServlet extends FrameworkServlet {
 			@Nullable Exception exception) throws Exception {
 
 		boolean errorView = false;
-
+		// 如果有异常,需执行全局异常处理逻辑
 		if (exception != null) {
 			if (exception instanceof ModelAndViewDefiningException mavDefiningException) {
 				logger.debug("ModelAndViewDefiningException encountered", exception);
@@ -1169,6 +1170,7 @@ public class DispatcherServlet extends FrameworkServlet {
 			}
 			else {
 				Object handler = (mappedHandler != null ? mappedHandler.getHandler() : null);
+				// 异常处理
 				mv = processHandlerException(request, response, handler, exception);
 				errorView = (mv != null);
 			}
@@ -1369,6 +1371,7 @@ public class DispatcherServlet extends FrameworkServlet {
 		ModelAndView exMv = null;
 		if (this.handlerExceptionResolvers != null) {
 			for (HandlerExceptionResolver resolver : this.handlerExceptionResolvers) {
+				// 全局异常处理
 				exMv = resolver.resolveException(request, response, handler, ex);
 				if (exMv != null) {
 					break;

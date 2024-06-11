@@ -62,7 +62,7 @@ public class ExceptionHandlerMethodResolver {
 		}
 	}
 
-
+	// 异常和方法绑定集合,key为异常类型,value为对应的方法
 	private final Map<Class<? extends Throwable>, Method> mappedMethods = new HashMap<>(16);
 
 	private final Map<Class<? extends Throwable>, Method> exceptionLookupCache = new ConcurrentReferenceHashMap<>(16);
@@ -73,7 +73,9 @@ public class ExceptionHandlerMethodResolver {
 	 * @param handlerType the type to introspect
 	 */
 	public ExceptionHandlerMethodResolver(Class<?> handlerType) {
+		// 拿到所有被@ExceptionHandler注解标记的方法,一个个方法循环处理
 		for (Method method : MethodIntrospector.selectMethods(handlerType, EXCEPTION_HANDLER_METHODS)) {
+			// 拿到该方法所有能处理的异常
 			for (Class<? extends Throwable> exceptionType : detectExceptionMappings(method)) {
 				addExceptionMapping(exceptionType, method);
 			}
@@ -88,7 +90,8 @@ public class ExceptionHandlerMethodResolver {
 	@SuppressWarnings("unchecked")
 	private List<Class<? extends Throwable>> detectExceptionMappings(Method method) {
 		List<Class<? extends Throwable>> result = new ArrayList<>();
-		detectAnnotationExceptionMappings(method, result);
+		detectAnnotationExceptionMappings(method, result); //拿到方法上的@ExceptionHandler注解
+		// 方法上没有注解, 直接根据方法参数上的有没有异常类型的参数
 		if (result.isEmpty()) {
 			for (Class<?> paramType : method.getParameterTypes()) {
 				if (Throwable.class.isAssignableFrom(paramType)) {
@@ -109,6 +112,7 @@ public class ExceptionHandlerMethodResolver {
 	}
 
 	private void addExceptionMapping(Class<? extends Throwable> exceptionType, Method method) {
+		// 把异常和方法绑定
 		Method oldMethod = this.mappedMethods.put(exceptionType, method);
 		if (oldMethod != null && !oldMethod.equals(method)) {
 			throw new IllegalStateException("Ambiguous @ExceptionHandler method mapped for [" +
@@ -162,7 +166,9 @@ public class ExceptionHandlerMethodResolver {
 	 */
 	@Nullable
 	public Method resolveMethodByExceptionType(Class<? extends Throwable> exceptionType) {
+		// exceptionLookupCache 做缓存作用,把经常使用到的放到这个集合,较少筛选时间
 		Method method = this.exceptionLookupCache.get(exceptionType);
+		// 缓存没有再去总的处理异常总集合中找
 		if (method == null) {
 			method = getMappedMethod(exceptionType);
 			this.exceptionLookupCache.put(exceptionType, method);

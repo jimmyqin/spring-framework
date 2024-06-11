@@ -398,7 +398,7 @@ public class ExceptionHandlerExceptionResolver extends AbstractHandlerMethodExce
 	@Nullable
 	protected ModelAndView doResolveHandlerMethodException(HttpServletRequest request,
 			HttpServletResponse response, @Nullable HandlerMethod handlerMethod, Exception exception) {
-
+		// 拿到能处理异常的方法
 		ServletInvocableHandlerMethod exceptionHandlerMethod = getExceptionHandlerMethod(handlerMethod, exception);
 		if (exceptionHandlerMethod == null) {
 			return null;
@@ -429,6 +429,7 @@ public class ExceptionHandlerExceptionResolver extends AbstractHandlerMethodExce
 			Object[] arguments = new Object[exceptions.size() + 1];
 			exceptions.toArray(arguments);  // efficient arraycopy call in ArrayList
 			arguments[arguments.length - 1] = handlerMethod;
+			// 执行处理异常的方法
 			exceptionHandlerMethod.invokeAndHandle(webRequest, mavContainer, arguments);
 		}
 		catch (Throwable invocationEx) {
@@ -484,6 +485,7 @@ public class ExceptionHandlerExceptionResolver extends AbstractHandlerMethodExce
 			handlerType = handlerMethod.getBeanType();
 			ExceptionHandlerMethodResolver resolver = this.exceptionHandlerCache.computeIfAbsent(
 					handlerType, ExceptionHandlerMethodResolver::new);
+			// 去拿能处理该异常的方法
 			Method method = resolver.resolveMethod(exception);
 			if (method != null) {
 				return new ServletInvocableHandlerMethod(handlerMethod.getBean(), method, this.applicationContext);

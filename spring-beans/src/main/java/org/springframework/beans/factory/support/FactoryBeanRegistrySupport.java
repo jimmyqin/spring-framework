@@ -143,9 +143,10 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 							}
 							beforeSingletonCreation(beanName);
 							try {
-								// 后置处理器如果有FactoryBeanRegistrySupport子类的实现的
+								// 如果有FactoryBeanRegistrySupport子类的实现的
 								// 则调用子类的，否则原样返回object
 								//这个object是使用FactoryBean方式生成的。
+								// 子类实现有后置处理器调用?
 								object = postProcessObjectFromFactoryBean(object, beanName);
 							}
 							catch (Throwable ex) {

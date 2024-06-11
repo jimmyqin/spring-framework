@@ -339,7 +339,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 
 			// 有就没有必要创建了直接返回，因为在循环依赖并需要创建代理的情况下，在查找三级缓存的时候已经创建了代理对象了
 			// 没有就执行动态代理的创建过程，因为 AbstractAutoProxyCreator这个就是创建代理对象的一个抽象类一个后置处理器，
-			// 他的子类也是一个创建动态代理的后置处理器，做的就是创将动态代理的工作
+			// 他的子类也是一个创建动态代理的后置处理器，做的就是创建动态代理的工作
 
 			//在没有循环依赖的普通情况下 earlyProxyReferences.remove(cacheKey)返回的是null
 			// remove方法会返回存储的对象

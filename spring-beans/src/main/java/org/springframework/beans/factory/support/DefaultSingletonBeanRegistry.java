@@ -253,6 +253,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 				}
 				try {
 					// getObject()方法会去创建bean
+					// 有可能拿到的是代理对象
 					singletonObject = singletonFactory.getObject();
 					newSingleton = true;
 				}
